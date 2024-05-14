@@ -8,7 +8,8 @@
     </div>
 
     <app-ui-call-bar (e_turn_on_mic)="handleUserMediaStatus(false, $event)"
-        (e_turn_on_camera)="handleUserMediaStatus(true, $event)"></app-ui-call-bar>
+        (e_turn_on_camera)="handleUserMediaStatus(true, $event)"
+        (e_hang_up_call)="handleEventHangUpCalling()"></app-ui-call-bar>
 </div>
 
 <!-- autoplay playsinline controls -->

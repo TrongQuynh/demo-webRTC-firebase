@@ -200,6 +200,10 @@ export class TalkWithStrangerCallComponent implements OnInit, OnDestroy {
     })
   }
 
+  public handleEventHangUpCalling(): void{
+    this.handleFirebaseDeleteConnection();
+  }
+
   private handleFirebaseDeleteUserAvailable(userKey: string) {
     return new Promise((resolve, reject) => {
       const db = getDatabase();
@@ -219,7 +223,16 @@ export class TalkWithStrangerCallComponent implements OnInit, OnDestroy {
 
         const localVideoElement = (this.local_video_element.element.nativeElement as HTMLVideoElement);
         const stream = await navigator.mediaDevices.getUserMedia({
-          video: true,
+          video: {
+            width: {
+              min: 320,
+               max: 746
+           },
+           height: {
+              min: 240,
+               max: 560
+           }
+          },
           audio: true,
         });
 
@@ -288,6 +301,7 @@ export class TalkWithStrangerCallComponent implements OnInit, OnDestroy {
     const peerTrack = this.peerConnection.addEventListener('track', e => {
       // When user click answer button
       e.streams[0].getTracks().forEach(track => {
+
         this.remoteStream.addTrack(track);
       })
     })
