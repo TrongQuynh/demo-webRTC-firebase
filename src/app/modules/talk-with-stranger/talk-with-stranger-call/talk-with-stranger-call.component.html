@@ -1,0 +1,14 @@
+<div class="call-container">
+    <app-animation-background></app-animation-background>
+
+    <div class="call-container__videos">
+        <video #local_video class="video-player" id="local_video" autoplay playsinline controls></video>
+
+        <video #remote_video class="video-player" id="remote_video" autoplay playsinline controls></video>
+    </div>
+
+    <app-ui-call-bar (e_turn_on_mic)="handleUserMediaStatus(false, $event)"
+        (e_turn_on_camera)="handleUserMediaStatus(true, $event)"></app-ui-call-bar>
+</div>
+
+<!-- autoplay playsinline controls -->

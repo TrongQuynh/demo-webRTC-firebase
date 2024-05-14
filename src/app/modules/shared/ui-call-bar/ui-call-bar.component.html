@@ -1,0 +1,24 @@
+<ul class="call-bar">
+    <li class="call-bar__item" [ngClass]="{'call-bar__item--active': isTurnOnCamera}" (click)="clickHandleChangeCamState()">
+        <fa-icon [icon]="isTurnOnCamera ? FONT_AWESOME.faVideo : FONT_AWESOME.faVideoSlash"></fa-icon>
+    </li>
+
+    <li class="call-bar__item" [ngClass]="{'call-bar__item--active': isTurnOnMic}" (click)="clickHandleChangeMicState()">
+        <fa-icon [icon]="isTurnOnMic ? FONT_AWESOME.faMicrophone : FONT_AWESOME.faMicrophoneSlash"></fa-icon>
+    </li>
+
+    <li class="call-bar__item" (click)="clickHangUpCall()">
+        <fa-icon [icon]="FONT_AWESOME.faPhoneSlash"></fa-icon>
+    </li>
+
+    <li class="call-bar__item">
+        <fa-icon [icon]="FONT_AWESOME.faCommentDots"></fa-icon>
+    </li>
+
+</ul>
+
+<ng-template #mic_state_ref let-isTurnOn="isTurnOn">
+    <svg *ngIf="isTurnOn" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 352 512"><!--!Font Awesome Free 6.5.2 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free Copyright 2024 Fonticons, Inc.--><path d="M176 352c53 0 96-43 96-96V96c0-53-43-96-96-96S80 43 80 96v160c0 53 43 96 96 96zm160-160h-16c-8.8 0-16 7.2-16 16v48c0 74.8-64.5 134.8-140.8 127.4C96.7 376.9 48 317.1 48 250.3V208c0-8.8-7.2-16-16-16H16c-8.8 0-16 7.2-16 16v40.2c0 89.6 64 169.6 152 181.7V464H96c-8.8 0-16 7.2-16 16v16c0 8.8 7.2 16 16 16h160c8.8 0 16-7.2 16-16v-16c0-8.8-7.2-16-16-16h-56v-33.8C285.7 418.5 352 344.9 352 256v-48c0-8.8-7.2-16-16-16z"/></svg>
+
+    <svg *ngIf="!isTurnOn" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 512"><!--!Font Awesome Free 6.5.2 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free Copyright 2024 Fonticons, Inc.--><path d="M633.8 458.1l-157.8-122C488.6 312.1 496 285 496 256v-48c0-8.8-7.2-16-16-16h-16c-8.8 0-16 7.2-16 16v48c0 17.9-4 34.8-10.7 50.2l-26.6-20.5c3.1-9.4 5.3-19.2 5.3-29.7V96c0-53-43-96-96-96s-96 43-96 96v45.4L45.5 3.4C38.5-2.1 28.4-.8 23 6.2L3.4 31.5C-2.1 38.4-.8 48.5 6.2 53.9l588.4 454.7c7 5.4 17 4.2 22.5-2.8l19.6-25.3c5.4-7 4.2-17-2.8-22.5zM400 464h-56v-33.8c11.7-1.6 22.9-4.5 33.7-8.3l-50.1-38.7c-6.7 .4-13.4 .9-20.4 .2-55.9-5.5-98.7-48.6-111.2-101.9L144 241.3v6.9c0 89.6 64 169.6 152 181.7V464h-56c-8.8 0-16 7.2-16 16v16c0 8.8 7.2 16 16 16h160c8.8 0 16-7.2 16-16v-16c0-8.8-7.2-16-16-16z"/></svg>
+</ng-template>

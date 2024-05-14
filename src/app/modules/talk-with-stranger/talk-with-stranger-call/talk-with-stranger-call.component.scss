@@ -1,0 +1,44 @@
+video{
+    width: 100%;
+}
+
+.call-container{
+    position: fixed;
+    /* Remove element from normal document flow */
+    top: 0;
+    /* Set top position to 0 */
+    left: 0;
+    /* Set left position to 0 */
+    width: 100%;
+    /* Set width to 100% for full horizontal coverage */
+    height: 100%;
+    z-index: 1;
+    &__videos{
+        position: relative;
+        z-index: 1;
+        height: 100%;
+        display: flex;
+        flex-direction: row;
+        justify-content: center;
+        align-items: center;
+
+        &>video{
+            border-radius: 1rem;
+        }
+
+        &>#remote_video{
+            max-width: 75%;
+        }
+
+        &>#local_video{
+            max-width: 15rem;
+            position: absolute;
+            right: 2%;
+            bottom: 11%;
+        }
+    }
+}
+
+@media only screen and (max-width: 430px) {
+    
+  }

@@ -1,0 +1,47 @@
+<div class="call-home" *ngIf="!isPairing;else call_container_ref">
+   
+    <div class="call-home__box">
+        <h1>Call with stranger</h1>
+
+        <input type="text" placeholder="Enter user name" #txt_username_ref>
+    
+        <button (click)="clickHandleParing(txt_username_ref.value)" *ngIf="!isPairing">START</button>
+    </div>
+
+</div>
+
+<ng-template #call_container_ref>
+
+    <app-animation-background></app-animation-background>
+
+    <div class="call-container">
+
+        <h3>You are <span style="color: #22a9cb;">{{userInfo.username}}</span></h3>
+
+        <h2 *ngIf="_userOnlines.length > 0">Monster online</h2>
+
+        <ul class="call-user-online" *ngIf="_userOnlines.length > 0;else data_empty_ref">
+            <li class="call-user-online__user" *ngFor="let user of _userOnlines">
+                <img class="call-user-online__user__avatar"
+                    src="{{user.avatar}}"
+                    alt="">
+                <div class="call-user-online__user__call" (click)="handleEventCalling(user)">
+                    <fa-icon [icon]="FONT_AWESOME_SOLID.faPhoneAlt"></fa-icon>
+                </div>
+                <h2>Monster</h2>
+                <h2 class="call-user-online__user__name">{{user.username}}</h2>
+            </li>
+        </ul>
+
+        <ng-template #data_empty_ref>
+            <h2>No one here!</h2>
+        </ng-template>
+    </div>
+ 
+
+    <div class="mask" *ngIf="isWaitingPairing && targetInfo">
+        <app-calling-card [isIncommingCalling]="isIAnswer" [userInfo]="targetInfo" (e_cancel_call)="handleEventCancelCalling()"
+            (e_accepet_call)="handleEventAcceptCall()"></app-calling-card>
+    </div>
+
+</ng-template>
