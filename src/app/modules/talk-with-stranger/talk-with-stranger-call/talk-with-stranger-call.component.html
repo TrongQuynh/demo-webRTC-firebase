@@ -2,9 +2,9 @@
     <app-animation-background></app-animation-background>
 
     <div class="call-container__videos">
-        <video #local_video class="video-player" id="local_video" autoplay playsinline controls></video>
+        <video #local_video class="video-player" id="local_video" autoplay playsinline></video>
 
-        <video #remote_video class="video-player" id="remote_video" autoplay playsinline controls></video>
+        <video #remote_video class="video-player" id="remote_video" autoplay playsinline></video>
     </div>
 
     <app-ui-call-bar (e_turn_on_mic)="handleUserMediaStatus(false, $event)"
