@@ -28,7 +28,7 @@ export class TalkWithStrangerComponent implements OnInit, OnDestroy {
   isPairing = false;
   isWaitingPairing = false;
 
-  private _events: any[] = [];
+  private _eventFireBase: any[] = [];
 
   _userOnlines: IUser[] = [];
 
@@ -48,10 +48,16 @@ export class TalkWithStrangerComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
-    this._events.forEach(event => {
-      const db = getDatabase();
-      const connectionRef = ref(db, 'connections');
-      off(connectionRef, 'child_changed', event);
+    this.handleUnsubscribeEvents();
+
+    this.targetInfo = undefined;
+  }
+
+  private handleUnsubscribeEvents(): void{
+    this._eventFireBase.forEach(event => {
+      off(event, "child_added");
+      off(event, "child_changed");
+      off(event, "child_removed");
     })
   }
 
@@ -64,8 +70,6 @@ export class TalkWithStrangerComponent implements OnInit, OnDestroy {
       key: '',
       avatar: 'assets/img/monster_'+UtilClass.getRandomInt(1,3)+'.jpg'
     };
-
-
   }
 
   // EVENTS
@@ -99,7 +103,7 @@ export class TalkWithStrangerComponent implements OnInit, OnDestroy {
   }
 
   private handleRemoveUserOutOfList(userKey: string): void {
-    this._userOnlines = this._userOnlines.filter(user => user.key != userKey)
+    this._userOnlines = this._userOnlines.filter(user => user.key != userKey);
   }
 
   private onSubscribeFirebaseNewConnection(): void {
@@ -107,7 +111,7 @@ export class TalkWithStrangerComponent implements OnInit, OnDestroy {
 
     const connectionRef = ref(db, 'connections');
 
-    const childAdded = onChildAdded(connectionRef, (data) => {
+    onChildAdded(connectionRef, (data) => {
       // NEW DATA
 
       const newConnection = (data.val() as IConnection);
@@ -125,7 +129,7 @@ export class TalkWithStrangerComponent implements OnInit, OnDestroy {
       }
     })
 
-    const childChanged = onChildChanged(connectionRef, (data) => {
+    onChildChanged(connectionRef, (data) => {
       const connectionInfo: IConnection = (data.val() as IConnection);
       if (connectionInfo && connectionInfo.key == data.key && connectionInfo.connectState == "calling") {
         this.isWaitingPairing = false;
@@ -133,15 +137,20 @@ export class TalkWithStrangerComponent implements OnInit, OnDestroy {
       }
     })
 
-    const childRemoved = onChildRemoved(connectionRef, (data) => {
+    onChildRemoved(connectionRef, (data) => {
       if (this.currentConnection && this.currentConnection.key == data.key) {
+        // WHEN CONNECTION BE REMOVE
+        
         this.currentConnection = null;
         this.isWaitingPairing = false;
+
+        this.targetInfo = undefined;
+        this.isIAnswer = false;
       }
 
     });
 
-    this._events.push(childAdded, childChanged, childRemoved)
+    this._eventFireBase.push(connectionRef)
   }
 
   private handleFirebaseNewConnection(answer: IUser): void {
@@ -205,8 +214,13 @@ export class TalkWithStrangerComponent implements OnInit, OnDestroy {
     })
 
     onChildRemoved(userRef, (data) => {
-      this.handleRemoveUserOutOfList(data.val().key)
+      this.handleRemoveUserOutOfList(data.val().key);
+      if(this.currentConnection && (this.currentConnection.answerKey == data.val().key || this.currentConnection.offerKey == data.val().key)){
+        this.handleFirebaseDeleteConnection();
+      }
     });
+
+    this._eventFireBase.push(userRef);
   }
 
   public handleEventCalling(answer: IUser): void {
@@ -214,15 +228,12 @@ export class TalkWithStrangerComponent implements OnInit, OnDestroy {
     this.handleFirebaseNewConnection(answer);
   }
 
-
-
   public handleEventAcceptCall(): void {
     this.handleFirebaseUpdateStateConnection("calling");
   }
 
   public handleEventCancelCalling(): void {
     this.handleFirebaseDeleteConnection();
-    this.targetInfo = undefined;
   }
 
   private warningLeavePage(): void {
@@ -232,7 +243,6 @@ export class TalkWithStrangerComponent implements OnInit, OnDestroy {
 
     const unloadEvent = window.addEventListener("unload", async (event) => {
       this.handleFirebaseDeleteUserAvailable();
-      
     });
 
     this._eventDom.push({ name: "beforeunload", funv: beforeUnloadEvent }, { name: "unload", func: unloadEvent });

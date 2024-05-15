@@ -116,14 +116,14 @@ export class TalkWithStrangerCallComponent implements OnInit, OnDestroy {
 
     const connectionRef = ref(db, 'connections');
 
-    const childAdded = onChildAdded(connectionRef, (data) => {
+    onChildAdded(connectionRef, (data) => {
       // NEW DATA
 
       const newConnection = (data.val() as IConnection);
 
     })
 
-    const childChanged = onChildChanged(connectionRef, (data) => {
+    onChildChanged(connectionRef, (data) => {
 
       const connectionInfo: IConnection = (data.val() as IConnection);
       if (!this.currentConnection || this.currentConnection.key != data.key) return;
@@ -150,19 +150,18 @@ export class TalkWithStrangerCallComponent implements OnInit, OnDestroy {
 
     })
 
-    const childRemoved = onChildRemoved(connectionRef, (data) => {
+    onChildRemoved(connectionRef, (data) => {
       const connectionInfo = (data.val() as IConnection);
+      console.log("childRemoved");
+      
       this.handleFirebaseDeleteUserAvailable(connectionInfo.offerKey);
       this.handleFirebaseDeleteUserAvailable(connectionInfo.answerKey);
+
       this.handleTuenOffUserMedia();
       timer(1000).subscribe(()=> this.router.navigate(['/']))
     });
 
-    this._eventFireBase.push(
-      { name: "child_added", func: childAdded },
-      { name: "child_changed", func: childChanged },
-      { name: "child_removed", func: childRemoved }
-    )
+    this._eventFireBase.push(connectionRef);
   }
 
   private handleFirebaseGetInfoConnection(keyConnection: string) {
@@ -261,6 +260,15 @@ export class TalkWithStrangerCallComponent implements OnInit, OnDestroy {
 
         remoteVideoElement.srcObject = this.remoteStream;
 
+        const remoteVideoResizeEvent = remoteVideoElement.addEventListener("resize", ()=>{
+            const {width,height} = remoteVideoElement.getClientRects()[0];
+
+            if(height > width) remoteVideoElement.style.maxWidth = "30%";
+
+        })
+
+        this._eventDom.push({name:"resize", func:remoteVideoResizeEvent})
+
         this.localStream.getTracks().forEach(track => {
           //add localtracks so that they can be sent once the connection is established.
           this.peerConnection.addTrack(track, this.localStream);
@@ -328,9 +336,9 @@ export class TalkWithStrangerCallComponent implements OnInit, OnDestroy {
     })
 
     this._eventFireBase.forEach(event => {
-      const db = getDatabase();
-      const connectionRef = ref(db, 'connections');
-      off(connectionRef, event.name, event.func);
+      off(event, "child_added");
+      off(event, "child_changed");
+      off(event, "child_removed");
     })
 
     this._eventPeerConnection.forEach(event => {
