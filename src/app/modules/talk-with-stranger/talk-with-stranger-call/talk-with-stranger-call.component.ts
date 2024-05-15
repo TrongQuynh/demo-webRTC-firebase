@@ -45,6 +45,8 @@ export class TalkWithStrangerCallComponent implements OnInit, OnDestroy {
         if (roleQuery == null) this.router.navigate(["/"]);
         else {
           const connectionInfo: IConnection = await this.handleFirebaseGetInfoConnection(keyConnection);
+          console.log(connectionInfo == null);
+          
           if (!connectionInfo || isNaN(+roleQuery)) this.router.navigate(["/"]);
           else {
             this.currentConnection = connectionInfo;
@@ -152,13 +154,9 @@ export class TalkWithStrangerCallComponent implements OnInit, OnDestroy {
 
     onChildRemoved(connectionRef, (data) => {
       const connectionInfo = (data.val() as IConnection);
-      console.log("childRemoved");
-      
-      this.handleFirebaseDeleteUserAvailable(connectionInfo.offerKey);
-      this.handleFirebaseDeleteUserAvailable(connectionInfo.answerKey);
 
-      this.handleTuenOffUserMedia();
-      timer(1000).subscribe(()=> this.router.navigate(['/']))
+      this.handleTurnOffUserMedia();
+      timer(1000).subscribe(()=> this.router.navigate(['/waitting']))
     });
 
     this._eventFireBase.push(connectionRef);
@@ -166,6 +164,7 @@ export class TalkWithStrangerCallComponent implements OnInit, OnDestroy {
 
   private handleFirebaseGetInfoConnection(keyConnection: string) {
     return new Promise<any>((resolve, reject) => {
+     try {
       const db = getDatabase();
       const _connectionListRef = ref(db, "connections/" + keyConnection);
 
@@ -173,6 +172,10 @@ export class TalkWithStrangerCallComponent implements OnInit, OnDestroy {
         if (snapshot.exists()) resolve(snapshot.val());
         else resolve(null);
       })
+     } catch (error) {
+      this.router.navigate(["/"])
+      reject();
+     }
     })
   }
 
@@ -324,7 +327,7 @@ export class TalkWithStrangerCallComponent implements OnInit, OnDestroy {
     })
   }
 
-  private handleTuenOffUserMedia(): void{
+  private handleTurnOffUserMedia(): void{
     if (this.localStream) {
       this.localStream.getTracks().forEach(track => track.stop());
     }

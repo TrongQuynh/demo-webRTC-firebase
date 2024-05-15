@@ -1,22 +1,10 @@
-<div class="call-home" *ngIf="!isPairing;else call_container_ref">
-   
-    <div class="call-home__box">
-        <h1>Call with stranger</h1>
 
-        <input type="text" placeholder="Enter user name" #txt_username_ref>
-    
-        <button (click)="clickHandleParing(txt_username_ref.value)" *ngIf="!isPairing">START</button>
-    </div>
-
-</div>
-
-<ng-template #call_container_ref>
 
     <app-animation-background></app-animation-background>
 
     <div class="call-container">
 
-        <h3>You are <span style="color: #22a9cb;">{{userInfo.username}}</span></h3>
+        <h3 *ngIf="userInfo">You are <span style="color: #22a9cb;">{{userInfo.username}}</span></h3>
 
         <h2 *ngIf="_userOnlines.length > 0">Monster online</h2>
 
@@ -44,4 +32,4 @@
             (e_accepet_call)="handleEventAcceptCall()"></app-calling-card>
     </div>
 
-</ng-template>
+<!-- </ng-template> -->

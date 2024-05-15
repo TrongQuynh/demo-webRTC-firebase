@@ -1,12 +1,11 @@
-import { Component, OnDestroy, OnInit, ViewChild, ViewContainerRef, inject } from '@angular/core';
-import { Database, child, get, getDatabase, off, onChildAdded, onChildChanged, onChildRemoved, push, ref, remove, set, update } from '@angular/fire/database';
-import { Title } from '@angular/platform-browser';
-import { timer } from 'rxjs';
+import { Component, OnDestroy, OnInit, inject } from '@angular/core';
+import { Database, getDatabase, off, onChildAdded, onChildChanged, onChildRemoved, push, ref, remove, set, update } from '@angular/fire/database';
 import { UtilClass } from 'src/app/utils/utils';
-import { enviroment } from 'src/enviroment';
 import * as FONT_AWESOME_SOLID from '@fortawesome/free-solid-svg-icons';
 import { IConnection, IUser } from 'src/app/models/user.model';
 import { Router } from '@angular/router';
+import { CommonService } from 'src/app/common.service';
+
 
 
 @Component({
@@ -15,17 +14,17 @@ import { Router } from '@angular/router';
   styleUrls: ['./talk-with-stranger.component.scss']
 })
 export class TalkWithStrangerComponent implements OnInit, OnDestroy {
+
   private database: Database = inject(Database);
+
   private router = inject(Router);
 
-  private titleService = inject(Title);
-
   public userInfo!: IUser;
-  targetInfo:IUser | undefined;
+
+  targetInfo: IUser | undefined;
 
   readonly FONT_AWESOME_SOLID = FONT_AWESOME_SOLID;
 
-  isPairing = false;
   isWaitingPairing = false;
 
   private _eventFireBase: any[] = [];
@@ -42,9 +41,16 @@ export class TalkWithStrangerComponent implements OnInit, OnDestroy {
 
   private _eventDom: any[] = [];
 
+  private DB_INSTANCE = getDatabase();
+
+  private commonService = inject(CommonService);
+
   ngOnInit(): void {
-    // this.initUserData((new Date()).getTime().toString())
+    
     this.warningLeavePage();
+
+    this.onSubscribeUserInfo();
+
   }
 
   ngOnDestroy(): void {
@@ -53,7 +59,7 @@ export class TalkWithStrangerComponent implements OnInit, OnDestroy {
     this.targetInfo = undefined;
   }
 
-  private handleUnsubscribeEvents(): void{
+  private handleUnsubscribeEvents(): void {
     this._eventFireBase.forEach(event => {
       off(event, "child_added");
       off(event, "child_changed");
@@ -61,41 +67,21 @@ export class TalkWithStrangerComponent implements OnInit, OnDestroy {
     })
   }
 
+  private onSubscribeUserInfo(): void{
+    
+    this.commonService.userInfo$.subscribe(userInfo => {
+      if(userInfo == null) {
+        this.router.navigate(["/"]);
+        return;
+      }else{
 
+        this.userInfo = userInfo;
+        this.onSubscribeFirebaseUserOnlineOffline();
 
-  private initUserData(username: string): void {
-    this.userInfo = {
-      username,
-      id: (new Date()).getTime().toString() + UtilClass.getRandomInt(1, 99),
-      key: '',
-      avatar: 'assets/img/monster_'+UtilClass.getRandomInt(1,3)+'.jpg'
-    };
-  }
+        this.onSubscribeFirebaseNewConnection();
+      }
 
-  // EVENTS
-
-  public async clickHandleParing(username: string): Promise<void> {
-    if (!username) {
-      // this.message.error("Nhập cái tên zô đi anh trai ơi!")
-      return;
-    }
-    this.isPairing = true;
-    this.initUserData(username);
-    // this.handleGetListUserAvailable();
-
-    this.handleFirebaseUserOnline();
-
-    this.onSubscribeFirebaseUserOnlineOffline();
-
-    this.onSubscribeFirebaseNewConnection();
-  }
-
-  private handleFirebaseUserOnline(): void {
-    const db = getDatabase();
-    const _userAvailableRef = ref(db, "userAvailable");
-    const newUserRef = push(_userAvailableRef);
-    if (newUserRef.key) this.userInfo.key = newUserRef.key;
-    set(newUserRef, this.userInfo);
+    })
   }
 
   private handleAddUserIntoList(user: IUser): void {
@@ -107,9 +93,7 @@ export class TalkWithStrangerComponent implements OnInit, OnDestroy {
   }
 
   private onSubscribeFirebaseNewConnection(): void {
-    const db = getDatabase();
-
-    const connectionRef = ref(db, 'connections');
+    const connectionRef = ref(this.DB_INSTANCE, 'connections');
 
     onChildAdded(connectionRef, (data) => {
       // NEW DATA
@@ -140,7 +124,7 @@ export class TalkWithStrangerComponent implements OnInit, OnDestroy {
     onChildRemoved(connectionRef, (data) => {
       if (this.currentConnection && this.currentConnection.key == data.key) {
         // WHEN CONNECTION BE REMOVE
-        
+
         this.currentConnection = null;
         this.isWaitingPairing = false;
 
@@ -154,8 +138,7 @@ export class TalkWithStrangerComponent implements OnInit, OnDestroy {
   }
 
   private handleFirebaseNewConnection(answer: IUser): void {
-    const db = getDatabase();
-    const _connectionListRef = ref(db, "connections");
+    const _connectionListRef = ref(this.DB_INSTANCE, "connections");
     const newConnectionRef = push(_connectionListRef);
 
     this.targetInfo = answer;
@@ -179,15 +162,13 @@ export class TalkWithStrangerComponent implements OnInit, OnDestroy {
   }
 
   private handleFirebaseDeleteConnection(): void {
-    const db = getDatabase();
     if (this.currentConnection == null) return;
-    remove(ref(db, "connections/" + this.currentConnection.key));
+    remove(ref(this.DB_INSTANCE, "connections/" + this.currentConnection.key));
   }
 
   private handleFirebaseUpdateStateConnection(connectState: "waitting" | "calling"): void {
-    const db = getDatabase();
     if (!this.currentConnection) return;
-    const refToUpdate = ref(db, 'connections/' + this.currentConnection.key);
+    const refToUpdate = ref(this.DB_INSTANCE, 'connections/' + this.currentConnection.key);
 
     update(refToUpdate, {
       ...this.currentConnection,
@@ -195,17 +176,15 @@ export class TalkWithStrangerComponent implements OnInit, OnDestroy {
     });
   }
 
-  private handleFirebaseDeleteUserAvailable(): void{
-    const db = getDatabase();
-    
-    const userRef = ref(db, "userAvailable/" + this.userInfo.key);
+  private handleFirebaseDeleteUserAvailable(): void {
+
+    const userRef = ref(this.DB_INSTANCE, "userAvailable/" + this.userInfo.key);
 
     remove(userRef).then(() => { });
   }
 
   private onSubscribeFirebaseUserOnlineOffline(): void {
-    const db = getDatabase();
-
+    const db = getDatabase()
     const userRef = ref(db, 'userAvailable');
 
     onChildAdded(userRef, (data) => {
@@ -215,7 +194,7 @@ export class TalkWithStrangerComponent implements OnInit, OnDestroy {
 
     onChildRemoved(userRef, (data) => {
       this.handleRemoveUserOutOfList(data.val().key);
-      if(this.currentConnection && (this.currentConnection.answerKey == data.val().key || this.currentConnection.offerKey == data.val().key)){
+      if (this.currentConnection && (this.currentConnection.answerKey == data.val().key || this.currentConnection.offerKey == data.val().key)) {
         this.handleFirebaseDeleteConnection();
       }
     });

@@ -19,6 +19,7 @@ import { FormsModule } from '@angular/forms';
 import { HttpClientModule } from '@angular/common/http';
 import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 import { UiCallBarComponent } from './modules/shared/ui-call-bar/ui-call-bar.component';
+import { TalkWithStrangerStartComponent } from './modules/talk-with-stranger/talk-with-stranger-start/talk-with-stranger-start.component';
 
 registerLocaleData(en);
 
@@ -39,7 +40,8 @@ const firebaseConfig = {
     TalkWithStrangerComponent,
     CallingCardComponent,
     TalkWithStrangerCallComponent,
-    AnimationBackgroundComponent
+    AnimationBackgroundComponent,
+    TalkWithStrangerStartComponent
   ],
   imports: [
     BrowserModule,
