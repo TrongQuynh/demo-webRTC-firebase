@@ -212,7 +212,7 @@ export class TalkWithStrangerComponent implements OnInit, OnDestroy {
   public handleEventCalling(answer: IUser): void {
     this.isWaitingPairing = true;
     this.handleFirebaseNewConnection(answer);
-    this.audioService.playSound('offer');
+    this.audioService.playSound('answer');
   }
 
   public handleEventAcceptCall(): void {
