@@ -46,3 +46,9 @@ video {
         max-width: 100% !important;
     }
 }
+
+#window_size{
+    position: absolute;
+    z-index: 2;
+    top: 0;
+}

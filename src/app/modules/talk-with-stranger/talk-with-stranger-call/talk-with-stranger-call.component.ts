@@ -34,6 +34,8 @@ export class TalkWithStrangerCallComponent implements OnInit, OnDestroy {
   private _eventDom: any[] = [];
   private _eventPeerConnection: any[] = [];
 
+  public windowSize = {width: window.innerWidth, height: window.innerHeight};
+
   ngOnInit(): void {
     const keyConnection = this.route.snapshot.paramMap.get('key');
     this.warningLeavePage();

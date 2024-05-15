@@ -2,6 +2,9 @@
     <app-animation-background></app-animation-background>
 
     <div class="call-container__videos">
+
+        <h1 id="window_size">{{windowSize | json}}</h1>
+
         <video #local_video class="video-player" id="local_video" autoplay playsinline></video>
 
         <video #remote_video class="video-player" id="remote_video" autoplay playsinline></video>
