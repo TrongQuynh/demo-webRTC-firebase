@@ -24,7 +24,7 @@ export class AudioService {
       src: [sound],
       loop: true
     });
-    // this.sound.play();
+    this.sound.play();
   }
 
   stopSound(){
