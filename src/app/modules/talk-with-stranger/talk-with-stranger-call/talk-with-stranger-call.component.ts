@@ -226,6 +226,15 @@ export class TalkWithStrangerCallComponent implements OnInit, OnDestroy {
         if (!this.local_video_element) return;
 
         const localVideoElement = (this.local_video_element.element.nativeElement as HTMLVideoElement);
+
+        const localVideoResizeEvent = localVideoElement.addEventListener("resize", ()=>{
+          const {width,height} = localVideoElement.getClientRects()[0];
+          if(height > width) localVideoElement.style.maxWidth = "30%";
+
+      })
+
+      this._eventDom.push({name:"resize", func: localVideoResizeEvent})
+
         const stream = await navigator.mediaDevices.getUserMedia({
           video: {
             width: {

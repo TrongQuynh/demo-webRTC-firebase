@@ -5,6 +5,7 @@ import * as FONT_AWESOME_SOLID from '@fortawesome/free-solid-svg-icons';
 import { IConnection, IUser } from 'src/app/models/user.model';
 import { Router } from '@angular/router';
 import { CommonService } from 'src/app/common.service';
+import { AudioService } from 'src/app/audio.service';
 
 
 
@@ -18,6 +19,8 @@ export class TalkWithStrangerComponent implements OnInit, OnDestroy {
   private database: Database = inject(Database);
 
   private router = inject(Router);
+
+  private audioService = inject(AudioService);
 
   public userInfo!: IUser;
 
@@ -104,6 +107,8 @@ export class TalkWithStrangerComponent implements OnInit, OnDestroy {
         this.isWaitingPairing = true;
         this.currentConnection = newConnection;
 
+        this.audioService.playSound('answer');
+
         this.targetInfo = {
           avatar: newConnection.offerAvatar,
           id: '',
@@ -130,6 +135,8 @@ export class TalkWithStrangerComponent implements OnInit, OnDestroy {
 
         this.targetInfo = undefined;
         this.isIAnswer = false;
+
+        this.audioService.stopSound();
       }
 
     });
@@ -205,10 +212,12 @@ export class TalkWithStrangerComponent implements OnInit, OnDestroy {
   public handleEventCalling(answer: IUser): void {
     this.isWaitingPairing = true;
     this.handleFirebaseNewConnection(answer);
+    this.audioService.playSound('offer');
   }
 
   public handleEventAcceptCall(): void {
     this.handleFirebaseUpdateStateConnection("calling");
+    this.audioService.stopSound();
   }
 
   public handleEventCancelCalling(): void {
