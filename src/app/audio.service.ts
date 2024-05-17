@@ -19,7 +19,7 @@ export class AudioService {
   private sound: Howl | undefined;
 
   playSound(soundType: "offer" | "answer") {
-    let sound: string = soundType == "answer" ? 'assets/audio/turn_off_light_audio.mp3' : 'assets/audio/messenger_audio.mp3';
+    let sound: string = soundType == "answer" ? 'assets/audio/hello_audio.mp3' : 'assets/audio/waiting_effect_audio.mp3';
     this.sound = new Howl({
       src: [sound],
       loop: true

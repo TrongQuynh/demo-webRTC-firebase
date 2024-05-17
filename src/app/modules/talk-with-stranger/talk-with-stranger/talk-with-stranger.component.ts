@@ -49,7 +49,7 @@ export class TalkWithStrangerComponent implements OnInit, OnDestroy {
   private commonService = inject(CommonService);
 
   ngOnInit(): void {
-    
+
     this.warningLeavePage();
 
     this.onSubscribeUserInfo();
@@ -70,46 +70,40 @@ export class TalkWithStrangerComponent implements OnInit, OnDestroy {
     })
   }
 
-  private onSubscribeUserInfo(): void{
-    
+  private onSubscribeUserInfo(): void {
+
     this.commonService.userInfo$.subscribe(userInfo => {
-      if(userInfo == null) {
+      if (userInfo == null) {
         this.router.navigate(["/"]);
-        return;
-      }else{
+      } else {
 
         this.userInfo = userInfo;
+
         this.onSubscribeFirebaseUserOnlineOffline();
 
         this.onSubscribeFirebaseNewConnection();
       }
 
     })
-  }
 
-  private handleAddUserIntoList(user: IUser): void {
-    if (user.id != this.userInfo.id) this._userOnlines.push(user);
-  }
-
-  private handleRemoveUserOutOfList(userKey: string): void {
-    this._userOnlines = this._userOnlines.filter(user => user.key != userKey);
   }
 
   private onSubscribeFirebaseNewConnection(): void {
     const connectionRef = ref(this.DB_INSTANCE, 'connections');
 
     onChildAdded(connectionRef, (data) => {
-      // NEW DATA
-
       const newConnection = (data.val() as IConnection);
       if (this.userInfo.key == newConnection.answerKey && this.currentConnection == null) {
+
         this.isIAnswer = true;
-        this.isWaitingPairing = true;
+
+        this.isWaitingPairing = true; // SHOW OFER CALLING CARD
+
         this.currentConnection = newConnection;
 
         this.audioService.playSound('answer');
 
-        this.targetInfo = {
+        this.targetInfo = { // INFO OF OFFER
           avatar: newConnection.offerAvatar,
           id: '',
           key: newConnection.offerKey,
@@ -121,6 +115,7 @@ export class TalkWithStrangerComponent implements OnInit, OnDestroy {
     onChildChanged(connectionRef, (data) => {
       const connectionInfo: IConnection = (data.val() as IConnection);
       if (connectionInfo && connectionInfo.key == data.key && connectionInfo.connectState == "calling") {
+        // ACCEPT OFFER
         this.isWaitingPairing = false;
         this.router.navigate([`call/${data.key}`], { queryParams: { role: this.isIAnswer ? 1 : 0 } }); // 0: offer, 1: answer
       }
@@ -143,6 +138,35 @@ export class TalkWithStrangerComponent implements OnInit, OnDestroy {
 
     this._eventFireBase.push(connectionRef)
   }
+
+  private onSubscribeFirebaseUserOnlineOffline(): void {
+    const db = getDatabase()
+    const userRef = ref(db, 'userAvailable');
+
+    onChildAdded(userRef, (data) => {
+      // NEW DATA
+      this.handleAddUserIntoList(data.val());
+    })
+
+    onChildRemoved(userRef, (data) => {
+      this.handleRemoveUserOutOfList(data.val().key);
+      if (this.currentConnection && (this.currentConnection.answerKey == data.val().key || this.currentConnection.offerKey == data.val().key)) {
+        this.handleFirebaseDeleteConnection();
+      }
+    });
+
+    this._eventFireBase.push(userRef);
+  }
+
+  private handleAddUserIntoList(user: IUser): void {
+    if (user.id != this.userInfo.id) this._userOnlines.push(user);
+  }
+
+  private handleRemoveUserOutOfList(userKey: string): void {
+    this._userOnlines = this._userOnlines.filter(user => user.key != userKey);
+  }
+
+
 
   private handleFirebaseNewConnection(answer: IUser): void {
     const _connectionListRef = ref(this.DB_INSTANCE, "connections");
@@ -190,24 +214,7 @@ export class TalkWithStrangerComponent implements OnInit, OnDestroy {
     remove(userRef).then(() => { });
   }
 
-  private onSubscribeFirebaseUserOnlineOffline(): void {
-    const db = getDatabase()
-    const userRef = ref(db, 'userAvailable');
 
-    onChildAdded(userRef, (data) => {
-      // NEW DATA
-      this.handleAddUserIntoList(data.val());
-    })
-
-    onChildRemoved(userRef, (data) => {
-      this.handleRemoveUserOutOfList(data.val().key);
-      if (this.currentConnection && (this.currentConnection.answerKey == data.val().key || this.currentConnection.offerKey == data.val().key)) {
-        this.handleFirebaseDeleteConnection();
-      }
-    });
-
-    this._eventFireBase.push(userRef);
-  }
 
   public handleEventCalling(answer: IUser): void {
     this.isWaitingPairing = true;
