@@ -16,9 +16,10 @@ export class AudioService {
 
   private $play_sound = new Subject<boolean>();
 
-  private sound: Howl | undefined;
+  private sound: Howl | null = null;
 
   playSound(soundType: "offer" | "answer") {
+    console.log("AudioService", "playSound");
     let sound: string = soundType == "answer" ? 'assets/audio/hello_audio.mp3' : 'assets/audio/waiting_effect_audio.mp3';
     this.sound = new Howl({
       src: [sound],
@@ -28,7 +29,10 @@ export class AudioService {
   }
 
   stopSound(){
-    this.sound?.stop();
+    console.log("AudioService", "stopSound");
+    
+    if(this.sound) this.sound.stop();
+    this.sound = null;
   }
 
   
