@@ -118,6 +118,7 @@ export class TalkWithStrangerComponent implements OnInit, OnDestroy {
         // ACCEPT OFFER
         this.isWaitingPairing = false;
         this.router.navigate([`call/${data.key}`], { queryParams: { role: this.isIAnswer ? 1 : 0 } }); // 0: offer, 1: answer
+        this.audioService.stopSound();
       }
     })
 
