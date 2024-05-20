@@ -20,6 +20,8 @@ import { HttpClientModule } from '@angular/common/http';
 import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 import { UiCallBarComponent } from './modules/shared/ui-call-bar/ui-call-bar.component';
 import { TalkWithStrangerStartComponent } from './modules/talk-with-stranger/talk-with-stranger-start/talk-with-stranger-start.component';
+import { P2pGroupStartComponent } from './modules/shared/p2p-group/p2p-group-start/p2p-group-start.component';
+import { P2pGroupCallComponent } from './modules/shared/p2p-group/p2p-group-call/p2p-group-call.component';
 
 registerLocaleData(en);
 
@@ -41,7 +43,9 @@ const firebaseConfig = {
     CallingCardComponent,
     TalkWithStrangerCallComponent,
     AnimationBackgroundComponent,
-    TalkWithStrangerStartComponent
+    TalkWithStrangerStartComponent,
+    P2pGroupStartComponent,
+    P2pGroupCallComponent
   ],
   imports: [
     BrowserModule,

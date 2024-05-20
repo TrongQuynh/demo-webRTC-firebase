@@ -1,0 +1,25 @@
+<app-animation-background></app-animation-background>
+
+<div class="p2p-container">
+
+    <div class="p2p-container__header">
+        <div [ngClass]="{'p2p-container__header__active': isCreateTab}" class="p2p-container__header__create" (click)="isCreateTab = true">Create</div>
+        <div [ngClass]="{'p2p-container__header__active': !isCreateTab}" class="p2p-container__header__join" (click)="isCreateTab = false">Join</div>
+    </div>
+
+    <div class="p2p-container__box" *ngIf="isCreateTab;else join_group_template">
+        <input #username type="text" placeholder="Username">
+        <input #input type="text" placeholder="Group name">
+        <button (click)="handleEventCreateGroup(input.value, username.value)">Create</button>
+    </div>
+
+    <ng-template #join_group_template>
+        <div class="p2p-container__box">
+            <input #username type="text" placeholder="Username">
+            <input #linkJoin type="text" placeholder="Link Join">
+            <button (click)="handleEventJoinGroup(linkJoin.value, username.value)">Join</button>
+        </div>
+    </ng-template>
+    
+
+</div>

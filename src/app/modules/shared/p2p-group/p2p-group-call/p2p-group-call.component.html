@@ -1,0 +1,14 @@
+<app-animation-background></app-animation-background>
+<app-ui-call-bar (e_turn_on_mic)="handleUserMediaStatus(false, $event)"
+    (e_turn_on_camera)="handleUserMediaStatus(true, $event)"
+    (e_hang_up_call)="handleEventHangUpCalling()"></app-ui-call-bar>
+
+<div class="p2p-call-container">
+
+    <div #remote_video_container class="p2p-call-container__remote__videos">
+
+    </div>
+
+    <video #local_video class="video-player" id="local_video" autoplay playsinline></video>
+
+</div>

@@ -51,4 +51,8 @@ export class TalkWithStrangerStartComponent {
 
     this.router.navigate(["/waitting"]);
   }
+
+  public handleEventCreateGroup(): void{
+    this.router.navigate(["/group/start"]);
+  }
 }

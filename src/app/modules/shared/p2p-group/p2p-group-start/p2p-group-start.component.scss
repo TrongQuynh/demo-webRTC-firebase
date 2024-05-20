@@ -1,0 +1,96 @@
+.p2p-container {
+    overflow-y: hidden;
+    position: fixed;
+    /* Remove element from normal document flow */
+    top: 0;
+    /* Set top position to 0 */
+    left: 0;
+    /* Set left position to 0 */
+    width: 100%;
+    /* Set width to 100% for full horizontal coverage */
+    height: 100%;
+    z-index: 1;
+
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    row-gap: 2rem;
+
+    &__header {
+        width: 20rem;
+        height: 3rem;
+        display: flex;
+        flex-direction: row;
+        justify-content: space-between;
+        align-items: center;
+        border-radius: 1rem;
+        box-shadow: rgba(0, 0, 0, 0.1) 0px 4px 12px;
+        overflow: hidden;
+
+        &>div {
+            border-radius: 1rem;
+            width: 50%;
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+
+            font-family: "Poetsen One", sans-serif;
+            cursor: pointer;
+            transition: .4s all ease-in-out;
+            color: #808080;
+            height: 100%;
+        }
+
+        &__create {
+            
+        }
+
+        &__active{
+            color: white !important;
+            background-color: rgba(255, 255, 255, 0.2);
+        }
+    }
+
+    &__box {
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        width: 20rem;
+        height: 15rem;
+        border-radius: 1rem;
+        row-gap: 1rem;
+        box-shadow: rgba(0, 0, 0, 0.25) 0px 54px 55px, rgba(0, 0, 0, 0.12) 0px -12px 30px, rgba(0, 0, 0, 0.12) 0px 4px 6px, rgba(0, 0, 0, 0.17) 0px 12px 13px, rgba(0, 0, 0, 0.09) 0px -3px 5px;
+
+        &>input {
+            border-radius: 1.4rem;
+            border: none;
+            outline: none;
+
+            font-size: 24px;
+            padding: .5rem 0 .5rem .5rem;
+            width: 100%;
+            font-family: "Poetsen One", sans-serif;
+            background-color: transparent;
+            color: white;
+            text-align: center;
+        }
+
+        &>button {
+            cursor: pointer;
+            border-radius: 1.4rem;
+            font-weight: 700;
+            width: 80%;
+            outline: none;
+            border: none;
+            height: 2rem;
+            color: white;
+            font-size: 24px;
+            font-family: "Poetsen One", sans-serif;
+            background-color: #22a9cb;
+        }
+    }
+}
