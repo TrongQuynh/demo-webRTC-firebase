@@ -14,6 +14,11 @@ export class CommonService{
         this.$userInfo.next(user);
     }
 
+    public resetData(): void{
+        this.$userInfo.next(null);
+        this.$groupInfo.next(null);
+    }
+
     public setGroupInfo(group: IGroupP2P): void{
         this.$groupInfo.next(group);
     }

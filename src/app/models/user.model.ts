@@ -25,7 +25,7 @@ export interface IConnection{
 export interface IGroupP2P{
     groupName: string;
     groupKey: string;
-    users: string[] // THE KEYS OF CURRENT USER ON GROUP
+    users: string[], // THE KEYS OF CURRENT USER ON GROUP
 }
 
 export interface IGroupP2POfferAnswer{
@@ -33,6 +33,12 @@ export interface IGroupP2POfferAnswer{
     userKeyFrom: string; // THE KEY OF USER WHO WILL SEND RTC Session Description
     userKeyTo: string; // THE KEY OF USER WHO WILL RECEIVE RTC Session Description
     rtcSessionDes: RTCSessionDescriptionInit;
+}
+
+export interface IGroupP2PLeave{
+    groupKey: string;
+    keyOfUserLeave: string;
+    key: string;
 }
 
 export interface IGroupP2PIceCandidate{

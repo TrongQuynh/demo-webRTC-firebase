@@ -96,7 +96,7 @@ export class P2pGroupStartComponent implements OnDestroy, OnInit {
     return {
       groupName,
       groupKey: '',
-      users: []
+      users: [],
     }
   }
 

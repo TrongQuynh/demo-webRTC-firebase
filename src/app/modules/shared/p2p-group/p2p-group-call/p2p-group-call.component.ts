@@ -1,9 +1,9 @@
 import { Component, OnDestroy, OnInit, inject, Renderer2, ViewContainerRef, ViewChild, AfterViewInit } from '@angular/core';
-import { DataSnapshot, Database, getDatabase, off, onChildAdded, push, ref, remove, set } from '@angular/fire/database';
+import { DataSnapshot, Database, getDatabase, off, onChildAdded, onChildChanged, push, ref, remove, set, update } from '@angular/fire/database';
 import { Router } from '@angular/router';
 import { Subscription } from 'rxjs';
 import { CommonService } from 'src/app/common.service';
-import { IGroupP2P, IGroupP2PIceCandidate, IGroupP2POfferAnswer, IGroupP2PRequestJoinRoom, IUser } from 'src/app/models/user.model';
+import { IGroupP2P, IGroupP2PIceCandidate, IGroupP2PLeave, IGroupP2POfferAnswer, IGroupP2PRequestJoinRoom, IUser } from 'src/app/models/user.model';
 import { enviroment } from 'src/enviroment';
 
 @Component({
@@ -51,10 +51,11 @@ export class P2pGroupCallComponent implements OnInit, OnDestroy, AfterViewInit {
     this.onSubscribeFirebaseRequestJoinGroup();
     this.onSubscribeFirebaseReceiveOfferAnswer();
     this.onSubscribeFirebaseIceCandidates();
+    this.onSubscribeFirebaseWhenHaveUserLeave();
   }
 
   async ngAfterViewInit(): Promise<void> {
-    if(!this.userInfo) return;
+    if (!this.userInfo) return;
     await this.enableUserMedia();
   }
 
@@ -64,7 +65,7 @@ export class P2pGroupCallComponent implements OnInit, OnDestroy, AfterViewInit {
     this._eventDom.forEach(event => {
       window.removeEventListener(event.name, event.func);
     });
-    
+
     this._eventFirebase.forEach(event => {
       off(event, "child_added");
       off(event, "child_changed");
@@ -72,15 +73,18 @@ export class P2pGroupCallComponent implements OnInit, OnDestroy, AfterViewInit {
     })
 
     this._eventPeerConnection.forEach(item => {
-      const {key, events} = item;
+      const { key, events } = item;
       const peerConnection = this._peerConnections.get(key);
-      if(peerConnection){
-        events.forEach((event:any) => peerConnection.removeEventListener(event.name, event.func))
+      if (peerConnection) {
+        events.forEach((event: any) => peerConnection.removeEventListener(event.name, event.func))
       }
     })
 
     this._iceCandidatesResidual.forEach(key => this.handleFirebaseDeleteIceCandidate(key));
-    
+
+    if (this.groupInfo.users.length == 1 && this.groupInfo.users[0] == this.userInfo.key) {
+      this.handleFirebaseDeleteGroup(this.groupInfo.groupKey);
+    }
   }
 
   private onSubscribeDataCommonService(): void {
@@ -100,8 +104,6 @@ export class P2pGroupCallComponent implements OnInit, OnDestroy, AfterViewInit {
     const _groupRequestJoinRoomRef = ref(this.DB_INSTANCE, '_groupRequestJoinRoom');
 
     onChildAdded(_groupRequestJoinRoomRef, async (request) => {
-      console.log("onSubscribeFirebaseRequestJoinGroup", request.val());
-      
       const { groupKey, userRequestKey, requestKey, userReceiveRequests } = (request.val() as IGroupP2PRequestJoinRoom);
 
       const isHaveInListUserReceiveRequest: boolean = userReceiveRequests.includes(this.userInfo.key);
@@ -109,7 +111,7 @@ export class P2pGroupCallComponent implements OnInit, OnDestroy, AfterViewInit {
       if (this.groupInfo.groupKey == groupKey && isHaveInListUserReceiveRequest) {
         // EVERYONE WHO HAS JOIN THID GROUP WILL RECEIVE REQUEST
         // 1. CREATE OFFER
-        const {peerConnection,offer} = await this.handleCreateOffer(userRequestKey);
+        const { peerConnection, offer } = await this.handleCreateOffer(userRequestKey);
 
         this._peerConnections.set(userRequestKey, peerConnection);
 
@@ -139,6 +141,7 @@ export class P2pGroupCallComponent implements OnInit, OnDestroy, AfterViewInit {
     });
 
     const unloadEvent = window.addEventListener("unload", async (event) => {
+
       this.handleFirebaseDeleteUserAvailable();
       this._iceCandidatesResidual.forEach(key => this.handleFirebaseDeleteIceCandidate(key));
     });
@@ -154,9 +157,9 @@ export class P2pGroupCallComponent implements OnInit, OnDestroy, AfterViewInit {
 
         const remoteStream = new MediaStream();
 
-        const remoteVideoElement = this.handleCreateVideoTag();
+        const remoteVideoElement = this.handleCreateVideoTag(keyOfOpponentConnection);
 
-        if(this.remote_video_container_element){
+        if (this.remote_video_container_element) {
           (this.remote_video_container_element.element.nativeElement as HTMLDivElement).append(remoteVideoElement)
         }
 
@@ -187,17 +190,17 @@ export class P2pGroupCallComponent implements OnInit, OnDestroy, AfterViewInit {
     })
   }
 
-  private async handleCreateOffer(keyOfOpponentConnection: string): Promise<{peerConnection: RTCPeerConnection, offer: RTCSessionDescriptionInit}> {
+  private async handleCreateOffer(keyOfOpponentConnection: string): Promise<{ peerConnection: RTCPeerConnection, offer: RTCSessionDescriptionInit }> {
     const peerConnection = await this.handleCreatePeerConnection(keyOfOpponentConnection);
 
     const offer: RTCSessionDescriptionInit = await peerConnection.createOffer();
 
     peerConnection.setLocalDescription(offer);
 
-    return {peerConnection, offer};
+    return { peerConnection, offer };
   }
 
-  private async handleCreateAnswer(keyOfOpponentConnection: string,offer: RTCSessionDescriptionInit): Promise<{peerConnection: RTCPeerConnection, answer: RTCSessionDescriptionInit}> {
+  private async handleCreateAnswer(keyOfOpponentConnection: string, offer: RTCSessionDescriptionInit): Promise<{ peerConnection: RTCPeerConnection, answer: RTCSessionDescriptionInit }> {
     const peerConnection = await this.handleCreatePeerConnection(keyOfOpponentConnection);
 
     await peerConnection.setRemoteDescription(offer);
@@ -206,10 +209,10 @@ export class P2pGroupCallComponent implements OnInit, OnDestroy, AfterViewInit {
 
     peerConnection.setLocalDescription(answer);
 
-    return {peerConnection, answer};
+    return { peerConnection, answer };
   }
 
-  private handleFirebaseSendRTCSessionDescription(payload: IGroupP2POfferAnswer): void{
+  private handleFirebaseSendRTCSessionDescription(payload: IGroupP2POfferAnswer): void {
     const _groupRTCSessionDescriptionRef = ref(this.DB_INSTANCE, '_groupRTCSessionDescription');
     const newRtcSessDesRef = push(_groupRTCSessionDescriptionRef);
     set(newRtcSessDesRef, payload);
@@ -221,51 +224,49 @@ export class P2pGroupCallComponent implements OnInit, OnDestroy, AfterViewInit {
 
     onChildAdded(_groupRTCSessionDescriptionRef, async (request) => {
       const data = request.val() as IGroupP2POfferAnswer
-      if(data.type == 'offer') this.handleWhenReceiveOffer(data);
+      if (data.type == 'offer') this.handleWhenReceiveOffer(data);
       else this.handleWhenReceiveAnswer(data);
     })
 
     this._eventFirebase.push(_groupRTCSessionDescriptionRef);
   }
 
-  private async handleWhenReceiveOffer(data: IGroupP2POfferAnswer): Promise<void>{
-  // RECEIVE OFFER
-  const {userKeyTo ,rtcSessionDes, userKeyFrom} = data;
-      
-  if(this.userInfo.key != userKeyTo)   return;
+  private async handleWhenReceiveOffer(data: IGroupP2POfferAnswer): Promise<void> {
+    // RECEIVE OFFER
+    const { userKeyTo, rtcSessionDes, userKeyFrom } = data;
 
-  console.log("handleWhenReceiveAnswer", data.type);
-  
-  //1. CREATE ANSWER
-  //2.SEND ANSWER TO OFFER
+    if (this.userInfo.key != userKeyTo) return;
 
-  const {answer,peerConnection} = await this.handleCreateAnswer(userKeyFrom,rtcSessionDes);
+    //1. CREATE ANSWER
+    //2.SEND ANSWER TO OFFER
 
-  this._peerConnections.set(userKeyFrom, peerConnection);
+    const { answer, peerConnection } = await this.handleCreateAnswer(userKeyFrom, rtcSessionDes);
 
-  const payload: IGroupP2POfferAnswer = {
-    rtcSessionDes: {
-      type: answer.type,
-      sdp: answer.sdp
-    },
-    userKeyTo: userKeyFrom,
-    userKeyFrom: this.userInfo.key,
-    type: "answer"
+    this._peerConnections.set(userKeyFrom, peerConnection);
+
+    const payload: IGroupP2POfferAnswer = {
+      rtcSessionDes: {
+        type: answer.type,
+        sdp: answer.sdp
+      },
+      userKeyTo: userKeyFrom,
+      userKeyFrom: this.userInfo.key,
+      type: "answer"
+    }
+
+    this.handleFirebaseSendRTCSessionDescription(payload);
   }
 
-  this.handleFirebaseSendRTCSessionDescription(payload);
-  }
-
-  private handleWhenReceiveAnswer(data: IGroupP2POfferAnswer): void{
-    const {userKeyTo ,rtcSessionDes, userKeyFrom} = data;
-    if(this.userInfo.key != userKeyTo) return;
+  private handleWhenReceiveAnswer(data: IGroupP2POfferAnswer): void {
+    const { userKeyTo, rtcSessionDes, userKeyFrom } = data;
+    if (this.userInfo.key != userKeyTo) return;
 
     console.log("handleWhenReceiveAnswer", data.type);
-    
-    
+
+
     const peerConnection: RTCPeerConnection | undefined = this._peerConnections.get(userKeyFrom);
 
-    if(!peerConnection) return;
+    if (!peerConnection) return;
 
     peerConnection.setRemoteDescription(rtcSessionDes); // set remote des by offer
 
@@ -296,7 +297,7 @@ export class P2pGroupCallComponent implements OnInit, OnDestroy, AfterViewInit {
           usernameFragment: e.candidate.usernameFragment
         }
 
-        if(_iceCandidates) _iceCandidates.push(dataMap);
+        if (_iceCandidates) _iceCandidates.push(dataMap);
         else this._iceCandidates.set(keyOfOpponentConnection, [dataMap]);
 
         const payload: IGroupP2PIceCandidate = {
@@ -326,49 +327,94 @@ export class P2pGroupCallComponent implements OnInit, OnDestroy, AfterViewInit {
     })
   }
 
-  private onSubscribeFirebaseIceCandidates(): void{
+  private onSubscribeFirebaseIceCandidates(): void {
     const _groupIceCandidateRef = ref(this.DB_INSTANCE, '_groupIceCandidates');
-    onChildAdded(_groupIceCandidateRef, async(request) => {
+    onChildAdded(_groupIceCandidateRef, async (request) => {
 
-      const {_iceCandidates,userKeyFrom,userKeyTo, key} = request.val() as IGroupP2PIceCandidate;
+      const { _iceCandidates, userKeyFrom, userKeyTo, key } = request.val() as IGroupP2PIceCandidate;
 
-      if(this.userInfo.key != userKeyTo) return;
+      if (this.userInfo.key != userKeyTo) return;
 
       const peerConnection = this._peerConnections.get(userKeyFrom);
 
       this._iceCandidatesResidual.push(key);
 
-      if(!peerConnection) return;
+      if (!peerConnection) return;
 
       _iceCandidates.forEach(ice => peerConnection.addIceCandidate(ice));
-      
+
       this._peerConnections.set(userKeyFrom, peerConnection);
-      console.log("key: ", key);
-      
+    
       this.handleFirebaseDeleteIceCandidate(key);
     })
 
     this._eventFirebase.push(_groupIceCandidateRef);
   }
 
-  private handleFirebaseSendIceCandidate(payload: IGroupP2PIceCandidate): void{
+  private handleFirebaseSendIceCandidate(payload: IGroupP2PIceCandidate): void {
     const _groupIceCandidateRef = ref(this.DB_INSTANCE, '_groupIceCandidates');
     const newIceCandidateRef = push(_groupIceCandidateRef);
-    if(newIceCandidateRef.key) payload.key = newIceCandidateRef.key;
+    if (newIceCandidateRef.key) payload.key = newIceCandidateRef.key;
     set(newIceCandidateRef, payload);
 
 
   }
 
-  private handleFirebaseDeleteIceCandidate(key: string){
+  private handleFirebaseDeleteIceCandidate(key: string) {
     const iceCandidateRef = ref(this.DB_INSTANCE, "_groupIceCandidates/" + key);
-    remove(iceCandidateRef).then(() => { this._iceCandidatesResidual = this._iceCandidatesResidual.filter(key => key != key)  });
+    remove(iceCandidateRef).then(() => { this._iceCandidatesResidual = this._iceCandidatesResidual.filter(key => key != key) });
   }
 
-  private handleFirebaseDeleteRequestJoinRoom(requestKey: string): void{
+  private handleFirebaseDeleteRequestJoinRoom(requestKey: string): void {
     const userRef = ref(this.DB_INSTANCE, "_groupRequestJoinRoom/" + requestKey);
 
     remove(userRef).then(() => { });
+  }
+
+  private handleFirebaseDeleteGroup(groupKey: string): void {
+    const userRef = ref(this.DB_INSTANCE, "_groupLeave/" + groupKey);
+
+    remove(userRef).then(() => { });
+  }
+
+  private onSubscribeFirebaseWhenHaveUserLeave(): void {
+    if (!this.groupInfo) return;
+    const _groupRef = ref(this.DB_INSTANCE, '_groupLeave');
+    onChildAdded(_groupRef, request => {
+
+      const { groupKey, key, keyOfUserLeave } = request.val() as IGroupP2PLeave;
+
+      if (groupKey != this.groupInfo.groupKey) return;
+
+      this.groupInfo.users = this.groupInfo.users.filter(key => key != keyOfUserLeave);
+
+      const peerConnection = this._peerConnections.get(keyOfUserLeave);
+
+      const _ice = this._iceCandidates.get(keyOfUserLeave);
+
+      if (!peerConnection) this._peerConnections.delete(keyOfUserLeave);
+
+      if (_ice) this._iceCandidates.delete(keyOfUserLeave);
+
+      document.getElementById(keyOfUserLeave)?.remove();
+
+      this.handleFirebaseDeleteKeyLeaveRoom(key);
+
+    })
+    this._eventFirebase.push(_groupRef);
+  }
+
+  private handleFirebaseUserLeaveRoom(group: IGroupP2PLeave): void {
+    const _groupLeaveRef = ref(this.DB_INSTANCE, '_groupLeave');
+    const newLeaveReq = push(_groupLeaveRef);
+    if (newLeaveReq.key) group.key = group.key = newLeaveReq.key;
+    set(newLeaveReq, group);
+  }
+
+  private handleFirebaseDeleteKeyLeaveRoom(key: string): void {
+    const _groupLeaveRef = ref(this.DB_INSTANCE, "_groupLeave/" + key);
+
+    remove(_groupLeaveRef).then(() => { });
   }
 
   private enableUserMedia() {
@@ -376,7 +422,7 @@ export class P2pGroupCallComponent implements OnInit, OnDestroy, AfterViewInit {
       try {
 
         if (!this.local_video_element) return;
-        
+
         const localVideoElement = (this.local_video_element.element.nativeElement as HTMLVideoElement);
 
         const localVideoResizeEvent = localVideoElement.addEventListener("resize", () => {
@@ -412,11 +458,12 @@ export class P2pGroupCallComponent implements OnInit, OnDestroy, AfterViewInit {
     })
   }
 
-  private handleCreateVideoTag(): HTMLVideoElement {
+  private handleCreateVideoTag(userKey: string): HTMLVideoElement {
     const element = document.createElement("video");
     element.autoplay = true;
     element.playsInline = true;
     element.className = "video-player"
+    element.id = userKey;
     return element;
   }
 
@@ -428,15 +475,33 @@ export class P2pGroupCallComponent implements OnInit, OnDestroy, AfterViewInit {
   }
 
   public handleUserMediaStatus(isCamera: boolean, isTurnOn: boolean): void {
-    if(!this.localStream) return;
+    if (!this.localStream) return;
     this.localStream.getTracks().forEach(track => {
       if (track.kind == "video" && isCamera) track.enabled = isTurnOn;
       if (track.kind == "audio" && !isCamera) track.enabled = isTurnOn;
     })
   }
 
+  private handleTurnOffUserMedia(): void {
+    if (this.localStream) {
+      this.localStream.getTracks().forEach(track => track.stop());
+    }
+  }
+
   public handleEventHangUpCalling(): void {
-    // this.handleFirebaseDeleteConnection();
+    if (!this.groupInfo) return;
+    const payload: IGroupP2PLeave = {
+      groupKey: this.groupInfo.groupKey,
+      key: '',
+      keyOfUserLeave: this.userInfo.key
+    }
+    this.handleFirebaseUserLeaveRoom(payload);
+
+    this.handleTurnOffUserMedia();
+
+    this.commonService.resetData();
+
+    this.router.navigate(["/group/start"]);
   }
   // _groupOffer
   // _groupAnswer
