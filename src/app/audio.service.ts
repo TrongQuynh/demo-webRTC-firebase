@@ -9,7 +9,8 @@ export class AudioService {
 
   constructor() {
     //'assets/audio/sena_audio.mp3', 
-   
+   console.log("Init audio");
+   this.initSound();
   }
 
   private subscription: Subscription | undefined;
@@ -19,20 +20,23 @@ export class AudioService {
   private sound: Howl | null = null;
 
   playSound(soundType: "offer" | "answer") {
-    console.log("AudioService", "playSound");
-    let sound: string = soundType == "answer" ? 'assets/audio/hello_audio.mp3' : 'assets/audio/waiting_effect_audio.mp3';
+    console.log("AudioService", "playSound", soundType);
+    
+    if(this.sound) this.sound.play();
+    else this.initSound();
+  }
+
+  private initSound(): void{
+    // let sound: string = soundType == "answer" ? 'assets/audio/hello_audio.mp3' : 'assets/audio/waiting_effect_audio.mp3';
     this.sound = new Howl({
-      src: [sound],
+      src: ["assets/audio/waiting_effect_audio.mp3"],
       loop: true
     });
-    this.sound.play();
   }
 
   stopSound(){
-    console.log("AudioService", "stopSound");
-    
+    console.log("AudioService", "stopSound", this.sound);
     if(this.sound) this.sound.stop();
-    this.sound = null;
   }
 
   

@@ -93,8 +93,9 @@ export class TalkWithStrangerComponent implements OnInit, OnDestroy {
 
     onChildAdded(connectionRef, (data) => {
       const newConnection = (data.val() as IConnection);
+      console.log("AudioService", this.userInfo, newConnection, this.currentConnection);
       if (this.userInfo.key == newConnection.answerKey && this.currentConnection == null) {
-
+        
         this.isIAnswer = true;
 
         this.isWaitingPairing = true; // SHOW OFER CALLING CARD
@@ -241,7 +242,12 @@ export class TalkWithStrangerComponent implements OnInit, OnDestroy {
       this.handleFirebaseDeleteUserAvailable();
     });
 
-    this._eventDom.push({ name: "beforeunload", funv: beforeUnloadEvent }, { name: "unload", func: unloadEvent });
+    const popstateEvent  = window.addEventListener("popstate", (event)=> {
+      this.handleFirebaseDeleteUserAvailable();
+      
+    });
+
+    this._eventDom.push({ name: "beforeunload", funv: beforeUnloadEvent }, { name: "unload", func: unloadEvent }, { name: "popstate", func: popstateEvent });
   }
 
 }

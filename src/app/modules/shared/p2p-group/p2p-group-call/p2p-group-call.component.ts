@@ -1,10 +1,11 @@
 import { Component, OnDestroy, OnInit, inject, Renderer2, ViewContainerRef, ViewChild, AfterViewInit } from '@angular/core';
 import { DataSnapshot, Database, getDatabase, off, onChildAdded, onChildChanged, push, ref, remove, set, update } from '@angular/fire/database';
-import { Router } from '@angular/router';
-import { Subscription } from 'rxjs';
+import { ActivatedRoute, Router } from '@angular/router';
+import { Subscription, timer } from 'rxjs';
 import { CommonService } from 'src/app/common.service';
 import { IGroupP2P, IGroupP2PIceCandidate, IGroupP2PLeave, IGroupP2POfferAnswer, IGroupP2PRequestJoinRoom, IUser } from 'src/app/models/user.model';
 import { enviroment } from 'src/enviroment';
+import * as QRCode from "qrcode";
 
 @Component({
   selector: 'app-p2p-group-call',
@@ -18,6 +19,9 @@ export class P2pGroupCallComponent implements OnInit, OnDestroy, AfterViewInit {
 
   @ViewChild("remote_video_container", { read: ViewContainerRef, static: false })
   remote_video_container_element: ViewContainerRef | null = null;
+
+  @ViewChild("qr_code_container", { read: ViewContainerRef, static: false })
+  qr_code_container_element: ViewContainerRef | null = null;
 
   private router = inject(Router);
 
@@ -44,6 +48,11 @@ export class P2pGroupCallComponent implements OnInit, OnDestroy, AfterViewInit {
   private _iceCandidates = new Map<string, RTCIceCandidate[]>();// key: userId of user that we Connect To, value: ice
 
   private _iceCandidatesResidual: string[] = []; // ice candidate còn dư still not clear
+
+  public qrCodeState: {
+    isShowing: boolean,
+    isShowLoading: boolean
+  } = { isShowing: false, isShowLoading: false };
 
   async ngOnInit(): Promise<void> {
     this.onSubscribeDataCommonService();
@@ -82,9 +91,11 @@ export class P2pGroupCallComponent implements OnInit, OnDestroy, AfterViewInit {
 
     this._iceCandidatesResidual.forEach(key => this.handleFirebaseDeleteIceCandidate(key));
 
-    if (this.groupInfo.users.length == 1 && this.groupInfo.users[0] == this.userInfo.key) {
+    if (this.groupInfo && this.groupInfo.users.length == 1 && this.groupInfo.users[0] == this.userInfo.key) {
       this.handleFirebaseDeleteGroup(this.groupInfo.groupKey);
     }
+
+    this.commonService.resetData();
   }
 
   private onSubscribeDataCommonService(): void {
@@ -344,7 +355,7 @@ export class P2pGroupCallComponent implements OnInit, OnDestroy, AfterViewInit {
       _iceCandidates.forEach(ice => peerConnection.addIceCandidate(ice));
 
       this._peerConnections.set(userKeyFrom, peerConnection);
-    
+
       this.handleFirebaseDeleteIceCandidate(key);
     })
 
@@ -488,6 +499,22 @@ export class P2pGroupCallComponent implements OnInit, OnDestroy, AfterViewInit {
     }
   }
 
+  public handleCreateQrCode(): void {
+
+    this.qrCodeState.isShowing = true;
+    this.qrCodeState.isShowLoading = true;
+    timer(1000).subscribe(async () => {
+     
+      if (!this.groupInfo || !this.qr_code_container_element) return;
+      const canvas = this.qr_code_container_element.element.nativeElement as HTMLCanvasElement;
+      const domain = window.location.origin;
+
+      await QRCode.toCanvas(canvas, `${domain}/group/start?link=${this.groupInfo.groupKey}`);
+
+      this.qrCodeState.isShowLoading = false;
+    })
+  }
+
   public handleEventHangUpCalling(): void {
     if (!this.groupInfo) return;
     const payload: IGroupP2PLeave = {
@@ -499,10 +526,9 @@ export class P2pGroupCallComponent implements OnInit, OnDestroy, AfterViewInit {
 
     this.handleTurnOffUserMedia();
 
-    this.commonService.resetData();
-
     this.router.navigate(["/group/start"]);
   }
+
   // _groupOffer
   // _groupAnswer
 

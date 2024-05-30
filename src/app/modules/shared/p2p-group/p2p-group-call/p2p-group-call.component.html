@@ -1,7 +1,8 @@
 <app-animation-background></app-animation-background>
 <app-ui-call-bar (e_turn_on_mic)="handleUserMediaStatus(false, $event)"
     (e_turn_on_camera)="handleUserMediaStatus(true, $event)"
-    (e_hang_up_call)="handleEventHangUpCalling()"></app-ui-call-bar>
+    (e_hang_up_call)="handleEventHangUpCalling()"
+    (e_qr_code)="handleCreateQrCode()"></app-ui-call-bar>
 
 <div class="p2p-call-container">
 
@@ -12,3 +13,15 @@
     <video #local_video class="video-player" id="local_video" autoplay playsinline></video>
 
 </div>
+
+<div class="qr-code-container" *ngIf="qrCodeState.isShowing">
+    <div class="qr-code">
+        <canvas class="qr-container" #qr_code_container></canvas>
+        <ng-container *ngIf="qrCodeState.isShowLoading == false; else loading"></ng-container>
+        <button (click)="qrCodeState.isShowing = false">Close</button>
+    </div>
+</div>
+
+<ng-template #loading>
+    <app-loader></app-loader>
+</ng-template>

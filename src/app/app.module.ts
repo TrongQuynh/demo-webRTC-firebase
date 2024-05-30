@@ -22,6 +22,7 @@ import { UiCallBarComponent } from './modules/shared/ui-call-bar/ui-call-bar.com
 import { TalkWithStrangerStartComponent } from './modules/talk-with-stranger/talk-with-stranger-start/talk-with-stranger-start.component';
 import { P2pGroupStartComponent } from './modules/shared/p2p-group/p2p-group-start/p2p-group-start.component';
 import { P2pGroupCallComponent } from './modules/shared/p2p-group/p2p-group-call/p2p-group-call.component';
+import { LoaderComponent } from './modules/shared/loader/loader.component';
 
 registerLocaleData(en);
 
@@ -45,7 +46,8 @@ const firebaseConfig = {
     AnimationBackgroundComponent,
     TalkWithStrangerStartComponent,
     P2pGroupStartComponent,
-    P2pGroupCallComponent
+    P2pGroupCallComponent,
+    LoaderComponent
   ],
   imports: [
     BrowserModule,

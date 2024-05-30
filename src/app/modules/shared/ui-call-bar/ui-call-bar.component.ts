@@ -20,6 +20,7 @@ export class UiCallBarComponent {
   @Output() e_turn_on_mic = new EventEmitter<boolean>();
   @Output() e_turn_on_camera = new EventEmitter<boolean>();
   @Output() e_hang_up_call = new EventEmitter<boolean>();
+  @Output() e_qr_code = new EventEmitter<boolean>();
 
   public clickHandleChangeMicState(): void{
     this.isTurnOnMic = !this.isTurnOnMic;
@@ -33,6 +34,10 @@ export class UiCallBarComponent {
 
   public clickHangUpCall(): void{
     this.e_hang_up_call.emit(true);
+  }
+
+  public clickCreateQrCode(): void{
+    this.e_qr_code.emit(true);
   }
 
 }

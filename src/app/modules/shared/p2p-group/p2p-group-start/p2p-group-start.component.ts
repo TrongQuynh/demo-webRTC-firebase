@@ -1,6 +1,7 @@
-import { Component, OnDestroy, OnInit, inject } from '@angular/core';
+import { AfterContentInit, Component, OnDestroy, OnInit, ViewChild, ViewContainerRef, inject } from '@angular/core';
 import { Database, get, getDatabase, off, onChildAdded, push, ref, set, update } from '@angular/fire/database';
-import { Router } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
+import { timer } from 'rxjs';
 import { CommonService } from 'src/app/common.service';
 import { IGroupP2P, IGroupP2PRequestJoinRoom, IUser } from 'src/app/models/user.model';
 import { UtilClass } from 'src/app/utils/utils';
@@ -10,9 +11,13 @@ import { UtilClass } from 'src/app/utils/utils';
   templateUrl: './p2p-group-start.component.html',
   styleUrls: ['./p2p-group-start.component.scss']
 })
-export class P2pGroupStartComponent implements OnDestroy, OnInit {
+export class P2pGroupStartComponent implements OnDestroy, OnInit, AfterContentInit {
+
+  @ViewChild("linkJoin", { read: ViewContainerRef, static: false })
+  linkJoin_element: ViewContainerRef | null = null;
 
   private router = inject(Router);
+  private route = inject(ActivatedRoute);
 
   private database: Database = inject(Database);
 
@@ -30,6 +35,11 @@ export class P2pGroupStartComponent implements OnDestroy, OnInit {
 
   ngOnInit(): void {
     // this.onSubscribeFirebaseRequestJoinGroup();
+    
+  }
+
+  ngAfterContentInit(): void {
+    this.handleGetLinkJoinFromURL();
   }
 
   ngOnDestroy(): void {
@@ -146,6 +156,21 @@ export class P2pGroupStartComponent implements OnDestroy, OnInit {
       off(event, "child_added");
       off(event, "child_changed");
       off(event, "child_removed");
+    })
+  }
+
+  public handleGetLinkJoinFromURL(): void{
+
+    const linkJoin : string | null = this.route.snapshot.queryParams["link"];
+    
+    
+    if(!linkJoin) return;
+    this.isCreateTab = false;
+
+    timer(0).subscribe(()=>{
+      if(!this.linkJoin_element) return;
+
+      (this.linkJoin_element.element.nativeElement as HTMLInputElement).value = linkJoin;
     })
   }
 

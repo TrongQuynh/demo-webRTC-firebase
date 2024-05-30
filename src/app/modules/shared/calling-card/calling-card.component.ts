@@ -9,7 +9,7 @@ import { IUser } from 'src/app/models/user.model';
 export class CallingCardComponent {
 
   @Input() isIncommingCalling: boolean = false;
-  @Input() userInfo!: IUser;
+  @Input({required: true}) userInfo!: IUser;
 
   @Output() e_cancel_call = new EventEmitter();
   @Output() e_accepet_call = new EventEmitter();
