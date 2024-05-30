@@ -23,7 +23,6 @@ export class AudioService {
     console.log("AudioService", "playSound", soundType);
     
     if(this.sound) this.sound.play();
-    else this.initSound();
   }
 
   private initSound(): void{
