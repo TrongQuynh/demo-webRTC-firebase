@@ -1,8 +1,9 @@
 import { Component, OnDestroy, OnInit, ViewChild, ViewContainerRef, inject } from '@angular/core';
 import { child, get, getDatabase, off, onChildAdded, onChildChanged, onChildRemoved, ref, remove, update } from '@angular/fire/database';
 import { ActivatedRoute, Router } from '@angular/router';
-import { timer } from 'rxjs';
-import { IConnection, Role } from 'src/app/models/user.model';
+import { Subscription, timer } from 'rxjs';
+import { CommonService } from 'src/app/common.service';
+import { IConnection, IUser, Role } from 'src/app/models/user.model';
 import { enviroment } from 'src/enviroment';
 
 @Component({
@@ -14,12 +15,16 @@ export class TalkWithStrangerCallComponent implements OnInit, OnDestroy {
 
   private route = inject(ActivatedRoute);
   private router = inject(Router);
+  private commonService = inject(CommonService);
 
   @ViewChild("local_video", { read: ViewContainerRef, static: false })
   local_video_element: ViewContainerRef | null = null;
 
   @ViewChild("remote_video", { read: ViewContainerRef, static: false })
   remote_video_element: ViewContainerRef | null = null;
+
+  isTurnOnMic: boolean = true;
+  isTurnOnCamera: boolean = true;
 
   private localStream!: MediaStream;
   private remoteStream!: MediaStream;
@@ -28,15 +33,20 @@ export class TalkWithStrangerCallComponent implements OnInit, OnDestroy {
 
   private currentConnection: IConnection | null = null;
 
+  public userInfo!: IUser;
+
   private isIAnswer: boolean = true;
 
   private _eventFireBase: any[] = [];
   private _eventDom: any[] = [];
   private _eventPeerConnection: any[] = [];
 
-  public windowSize = {width: window.innerWidth, height: window.innerHeight};
+  private _subscriptions: Subscription[] = [];
+
+  public windowSize = { width: window.innerWidth, height: window.innerHeight };
 
   ngOnInit(): void {
+    this.onSubscribeGetUserInfo();
     const keyConnection = this.route.snapshot.paramMap.get('key');
     this.warningLeavePage();
     if (!keyConnection) this.router.navigate(["/"]);
@@ -48,7 +58,7 @@ export class TalkWithStrangerCallComponent implements OnInit, OnDestroy {
         else {
           const connectionInfo: IConnection = await this.handleFirebaseGetInfoConnection(keyConnection);
           console.log(connectionInfo == null);
-          
+
           if (!connectionInfo || isNaN(+roleQuery)) this.router.navigate(["/"]);
           else {
             this.currentConnection = connectionInfo;
@@ -66,6 +76,7 @@ export class TalkWithStrangerCallComponent implements OnInit, OnDestroy {
 
   ngOnDestroy(): void {
     this.handleUnsubscribeEvents();
+    this._subscriptions.forEach(item => item.unsubscribe());
   }
 
   private async handleCreateOffer(): Promise<void> {
@@ -77,6 +88,8 @@ export class TalkWithStrangerCallComponent implements OnInit, OnDestroy {
 
       const offer = await this.peerConnection.createOffer();
 
+      console.log("[OFFER]", offer);
+      
       this.peerConnection.setLocalDescription(offer);
 
       const connectionUpdated: IConnection = {
@@ -103,7 +116,9 @@ export class TalkWithStrangerCallComponent implements OnInit, OnDestroy {
 
     await this.peerConnection.setRemoteDescription(connectioinInfo.offerRtcSessionDes);
 
-    const answer = await this.peerConnection.createAnswer({}); //just to make the docs happy
+    const answer = await this.peerConnection.createAnswer({});
+
+    console.log("[ANSWER]", answer);
 
     this.peerConnection.setLocalDescription(answer);
 
@@ -155,10 +170,15 @@ export class TalkWithStrangerCallComponent implements OnInit, OnDestroy {
     })
 
     onChildRemoved(connectionRef, (data) => {
+      if(!this.currentConnection || !this.userInfo) return;
       const connectionInfo = (data.val() as IConnection);
+      if(this.currentConnection.key != connectionInfo.key) return;
 
+      const isHaveSameUserId: boolean = this.isIAnswer ? this.userInfo.key == connectionInfo.answerKey : this.userInfo.key == connectionInfo.offerKey;
+      if(!isHaveSameUserId) return;
+      console.log("_eventFireBase", "Remove connection", this.isIAnswer, this.userInfo.key,connectionInfo.offerKey, connectionInfo.answerKey, this.currentConnection.offerKey, connectionInfo.offerKey);
       this.handleTurnOffUserMedia();
-      timer(1000).subscribe(()=> this.router.navigate(['/waitting']))
+      timer(1000).subscribe(() => this.router.navigate(['/waitting']))
     });
 
     this._eventFireBase.push(connectionRef);
@@ -166,18 +186,18 @@ export class TalkWithStrangerCallComponent implements OnInit, OnDestroy {
 
   private handleFirebaseGetInfoConnection(keyConnection: string) {
     return new Promise<any>((resolve, reject) => {
-     try {
-      const db = getDatabase();
-      const _connectionListRef = ref(db, "connections/" + keyConnection);
+      try {
+        const db = getDatabase();
+        const _connectionListRef = ref(db, "connections/" + keyConnection);
 
-      get(_connectionListRef).then(snapshot => {
-        if (snapshot.exists()) resolve(snapshot.val());
-        else resolve(null);
-      })
-     } catch (error) {
-      this.router.navigate(["/"])
-      reject();
-     }
+        get(_connectionListRef).then(snapshot => {
+          if (snapshot.exists()) resolve(snapshot.val());
+          else resolve(null);
+        })
+      } catch (error) {
+        this.router.navigate(["/"])
+        reject();
+      }
     })
   }
 
@@ -204,7 +224,7 @@ export class TalkWithStrangerCallComponent implements OnInit, OnDestroy {
     })
   }
 
-  public handleEventHangUpCalling(): void{
+  public handleEventHangUpCalling(): void {
     this.handleFirebaseDeleteConnection();
   }
 
@@ -212,9 +232,9 @@ export class TalkWithStrangerCallComponent implements OnInit, OnDestroy {
     return new Promise((resolve, reject) => {
       const db = getDatabase();
       // if (this.currentConnection == null) return;
-      
+
       // const userKey = this.isIAnswer ? this.currentConnection.answerKey : this.currentConnection.offerKey;
-      
+
       const userRef = ref(db, "userAvailable/" + userKey);
       remove(userRef).then(() => { resolve(true) });
     })
@@ -227,24 +247,24 @@ export class TalkWithStrangerCallComponent implements OnInit, OnDestroy {
 
         const localVideoElement = (this.local_video_element.element.nativeElement as HTMLVideoElement);
 
-        const localVideoResizeEvent = localVideoElement.addEventListener("resize", ()=>{
-          const {width,height} = localVideoElement.getClientRects()[0];
-          if(height > width) localVideoElement.style.maxWidth = "30%";
+        const localVideoResizeEvent = localVideoElement.addEventListener("resize", () => {
+          const { width, height } = localVideoElement.getClientRects()[0];
+          if (height > width) localVideoElement.style.maxWidth = "30%";
 
-      })
+        })
 
-      this._eventDom.push({name:"resize", func: localVideoResizeEvent})
+        this._eventDom.push({ name: "resize", func: localVideoResizeEvent })
 
         const stream = await navigator.mediaDevices.getUserMedia({
           video: {
             width: {
               min: 320,
-               max: 746
-           },
-           height: {
+              max: 746
+            },
+            height: {
               min: 240,
-               max: 560
-           }
+              max: 560
+            }
           },
           audio: true,
         });
@@ -274,16 +294,17 @@ export class TalkWithStrangerCallComponent implements OnInit, OnDestroy {
 
         remoteVideoElement.srcObject = this.remoteStream;
 
-        const remoteVideoResizeEvent = remoteVideoElement.addEventListener("resize", ()=>{
-            const {width,height} = remoteVideoElement.getClientRects()[0];
+        const remoteVideoResizeEvent = remoteVideoElement.addEventListener("resize", () => {
+          const { width, height } = remoteVideoElement.getClientRects()[0];
 
-            if(height > width) remoteVideoElement.style.maxWidth = "30%";
+          if (height > width) remoteVideoElement.style.maxWidth = "30%";
 
         })
 
-        this._eventDom.push({name:"resize", func:remoteVideoResizeEvent})
+        this._eventDom.push({ name: "resize", func: remoteVideoResizeEvent })
 
         this.localStream.getTracks().forEach(track => {
+          console.log("[Local]", track);
           //add localtracks so that they can be sent once the connection is established.
           this.peerConnection.addTrack(track, this.localStream);
         })
@@ -315,7 +336,8 @@ export class TalkWithStrangerCallComponent implements OnInit, OnDestroy {
     const peerConnection = this.peerConnection.addEventListener('icecandidate', e => {
       if (e.candidate) {
         this.handleSendIceCandidate(e.candidate);
-
+        console.log("[ICE]", e.candidate);
+        
         // this.socketService.socketDateEmitIceCandidate({iceCandidate: e.candidate, linkJoin: this.linkJoin})
       }
     })
@@ -323,7 +345,8 @@ export class TalkWithStrangerCallComponent implements OnInit, OnDestroy {
     const peerTrack = this.peerConnection.addEventListener('track', e => {
       // When user click answer button
       e.streams[0].getTracks().forEach(track => {
-
+        console.log("[Remote]", track);
+        
         this.remoteStream.addTrack(track);
       })
     })
@@ -332,13 +355,15 @@ export class TalkWithStrangerCallComponent implements OnInit, OnDestroy {
   }
 
   public handleUserMediaStatus(isCamera: boolean, isTurnOn: boolean): void {
+    if(!this.localStream) return;
+    if(isCamera) this.isTurnOnCamera = isTurnOn; else this.isTurnOnMic = isTurnOn;
     this.localStream.getTracks().forEach(track => {
       if (track.kind == "video" && isCamera) track.enabled = isTurnOn;
       if (track.kind == "audio" && !isCamera) track.enabled = isTurnOn;
     })
   }
 
-  private handleTurnOffUserMedia(): void{
+  private handleTurnOffUserMedia(): void {
     if (this.localStream) {
       this.localStream.getTracks().forEach(track => track.stop());
     }
@@ -367,10 +392,19 @@ export class TalkWithStrangerCallComponent implements OnInit, OnDestroy {
 
     const unloadEvent = window.addEventListener("unload", async (event) => {
       this.handleFirebaseDeleteConnection();
-      
+
     });
 
     this._eventDom.push({ name: "beforeunload", funv: beforeUnloadEvent }, { name: "unload", func: unloadEvent });
+  }
+
+  private onSubscribeGetUserInfo(): void{
+    this._subscriptions.push(
+      this.commonService.userInfo$.subscribe(data => {
+        if(data) this.userInfo = data
+        else this.router.navigate(["/waiting"]);
+      })
+    )
   }
 
 

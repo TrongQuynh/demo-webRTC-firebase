@@ -35,6 +35,9 @@ export class P2pGroupCallComponent implements OnInit, OnDestroy, AfterViewInit {
   private _eventDom: any[] = [];
   private _eventPeerConnection: any[] = [];
 
+  isTurnOnMic: boolean = true;
+  isTurnOnCamera: boolean = true;
+
   public userInfo!: IUser;
 
   private groupInfo!: IGroupP2P;
@@ -487,6 +490,7 @@ export class P2pGroupCallComponent implements OnInit, OnDestroy, AfterViewInit {
 
   public handleUserMediaStatus(isCamera: boolean, isTurnOn: boolean): void {
     if (!this.localStream) return;
+    if(isCamera) this.isTurnOnCamera = isTurnOn; else this.isTurnOnMic = isTurnOn;
     this.localStream.getTracks().forEach(track => {
       if (track.kind == "video" && isCamera) track.enabled = isTurnOn;
       if (track.kind == "audio" && !isCamera) track.enabled = isTurnOn;

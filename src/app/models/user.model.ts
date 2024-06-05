@@ -3,6 +3,7 @@ export interface IUser{
     id: string;
     key: string;
     avatar: string;
+    currentStatus: "waitting" | "calling"
 }
 
 export interface IConnection{

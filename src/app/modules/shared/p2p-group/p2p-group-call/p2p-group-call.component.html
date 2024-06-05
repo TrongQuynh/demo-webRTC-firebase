@@ -1,5 +1,6 @@
 <app-animation-background></app-animation-background>
-<app-ui-call-bar (e_turn_on_mic)="handleUserMediaStatus(false, $event)"
+<app-ui-call-bar [isTurnOnMic]="isTurnOnMic" [isTurnOnCamera]="isTurnOnCamera"
+ (e_turn_on_mic)="handleUserMediaStatus(false, $event)"
     (e_turn_on_camera)="handleUserMediaStatus(true, $event)"
     (e_hang_up_call)="handleEventHangUpCalling()"
     (e_qr_code)="handleCreateQrCode()"></app-ui-call-bar>

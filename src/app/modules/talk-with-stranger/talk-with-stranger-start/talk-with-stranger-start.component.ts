@@ -23,7 +23,8 @@ export class TalkWithStrangerStartComponent {
       username,
       id: (new Date()).getTime().toString() + UtilClass.getRandomInt(1, 99),
       key: '',
-      avatar: 'assets/img/monster_'+UtilClass.getRandomInt(1,5)+'.jpg'
+      avatar: 'assets/img/monster_'+UtilClass.getRandomInt(1,5)+'.jpg',
+      currentStatus: "waitting"
     };
 
     

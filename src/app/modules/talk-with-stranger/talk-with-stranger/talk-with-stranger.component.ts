@@ -6,6 +6,7 @@ import { IConnection, IUser } from 'src/app/models/user.model';
 import { Router } from '@angular/router';
 import { CommonService } from 'src/app/common.service';
 import { AudioService } from 'src/app/audio.service';
+import { Subscription, timer } from 'rxjs';
 
 
 
@@ -16,21 +17,36 @@ import { AudioService } from 'src/app/audio.service';
 })
 export class TalkWithStrangerComponent implements OnInit, OnDestroy {
 
+  // ======================== SERVICE ========================
+
   private database: Database = inject(Database);
 
   private router = inject(Router);
 
   private audioService = inject(AudioService);
 
-  public userInfo!: IUser;
+  private commonService = inject(CommonService);
 
-  targetInfo: IUser | undefined;
+  // ======================== READ-ONLY ========================
 
   readonly FONT_AWESOME_SOLID = FONT_AWESOME_SOLID;
 
-  isWaitingPairing = false;
+  private readonly TIME_WATTING_ACCEPT = 30 * 1000; // 30s
+
+  private readonly UtilClass = UtilClass;
+
+  private readonly DB_INSTANCE = getDatabase();
+
 
   private _eventFireBase: any[] = [];
+
+  public userInfo!: IUser;
+
+  public targetInfo: IUser | undefined;
+
+  private currentConnection: IConnection | null = null;
+
+  isWaitingPairing = false;
 
   _userOnlines: IUser[] = [];
 
@@ -38,15 +54,11 @@ export class TalkWithStrangerComponent implements OnInit, OnDestroy {
 
   isReload: boolean = true;
 
-  private currentConnection: IConnection | null = null;
+  private waittingToCallingSubscription: Subscription | null = null;
 
-  readonly UtilClass = UtilClass;
+  private _eventDom: any[] = [];  
 
-  private _eventDom: any[] = [];
-
-  private DB_INSTANCE = getDatabase();
-
-  private commonService = inject(CommonService);
+  // ======================== HOOKS ========================
 
   ngOnInit(): void {
 
@@ -60,6 +72,8 @@ export class TalkWithStrangerComponent implements OnInit, OnDestroy {
     this.handleUnsubscribeEvents();
 
     this.targetInfo = undefined;
+
+    this.waittingToCallingSubscription?.unsubscribe();
   }
 
   private handleUnsubscribeEvents(): void {
@@ -79,6 +93,8 @@ export class TalkWithStrangerComponent implements OnInit, OnDestroy {
 
         this.userInfo = userInfo;
 
+        this.handleFirebaseUpdateUserStatus("waitting");
+
         this.onSubscribeFirebaseUserOnlineOffline();
 
         this.onSubscribeFirebaseNewConnection();
@@ -93,8 +109,8 @@ export class TalkWithStrangerComponent implements OnInit, OnDestroy {
 
     onChildAdded(connectionRef, (data) => {
       const newConnection = (data.val() as IConnection);
-      console.log("AudioService", this.userInfo, newConnection, this.currentConnection);
-      if (this.userInfo.key == newConnection.answerKey && this.currentConnection == null) {
+
+      if (this.userInfo && this.userInfo.key == newConnection.answerKey && this.currentConnection == null && newConnection.connectState =="waitting") {
         
         this.isIAnswer = true;
 
@@ -108,14 +124,19 @@ export class TalkWithStrangerComponent implements OnInit, OnDestroy {
           avatar: newConnection.offerAvatar,
           id: '',
           key: newConnection.offerKey,
-          username: newConnection.offerName
-        }
+          username: newConnection.offerName,
+          currentStatus: "waitting"
+        };
+
+        this.handleFirebaseUpdateUserStatus("calling");
       }
     })
 
     onChildChanged(connectionRef, (data) => {
       const connectionInfo: IConnection = (data.val() as IConnection);
-      if (connectionInfo && connectionInfo.key == data.key && connectionInfo.connectState == "calling") {
+      if(!this.userInfo) return;
+      const isHaveSameUserId: boolean = this.isIAnswer ? this.userInfo.key == connectionInfo.answerKey : this.userInfo.key == connectionInfo.offerKey;
+      if (this.currentConnection && this.currentConnection.key == connectionInfo.key && isHaveSameUserId && connectionInfo.connectState == "calling") {
         // ACCEPT OFFER
         this.isWaitingPairing = false;
         this.router.navigate([`call/${data.key}`], { queryParams: { role: this.isIAnswer ? 1 : 0 } }); // 0: offer, 1: answer
@@ -124,7 +145,14 @@ export class TalkWithStrangerComponent implements OnInit, OnDestroy {
     })
 
     onChildRemoved(connectionRef, (data) => {
-      if (this.currentConnection && this.currentConnection.key == data.key) {
+      const connectionInfo: IConnection = (data.val() as IConnection);
+      if(!this.userInfo || !this.currentConnection) return;
+      const isHaveSameUserId: boolean = this.isIAnswer ? (this.userInfo.key == connectionInfo.answerKey && this.currentConnection.offerKey == connectionInfo.offerKey) : this.userInfo.key == connectionInfo.offerKey;
+
+      if (this.currentConnection.key == data.key && isHaveSameUserId) {
+
+        this.handleFirebaseUpdateUserStatus("waitting")
+        
         // WHEN CONNECTION BE REMOVE
 
         this.currentConnection = null;
@@ -132,6 +160,8 @@ export class TalkWithStrangerComponent implements OnInit, OnDestroy {
 
         this.targetInfo = undefined;
         this.isIAnswer = false;
+
+        this.waittingToCallingSubscription?.unsubscribe();
 
         this.audioService.stopSound();
       }
@@ -148,6 +178,14 @@ export class TalkWithStrangerComponent implements OnInit, OnDestroy {
     onChildAdded(userRef, (data) => {
       // NEW DATA
       this.handleAddUserIntoList(data.val());
+    })
+
+    onChildChanged(userRef, (data) => {
+      const userInfo: IUser = (data.val() as IUser);
+      this._userOnlines = this._userOnlines.map(user => {
+        if(user.id == userInfo.id) user.currentStatus = userInfo.currentStatus;
+        return user;
+      })
     })
 
     onChildRemoved(userRef, (data) => {
@@ -168,8 +206,6 @@ export class TalkWithStrangerComponent implements OnInit, OnDestroy {
     this._userOnlines = this._userOnlines.filter(user => user.key != userKey);
   }
 
-
-
   private handleFirebaseNewConnection(answer: IUser): void {
     const _connectionListRef = ref(this.DB_INSTANCE, "connections");
     const newConnectionRef = push(_connectionListRef);
@@ -186,12 +222,23 @@ export class TalkWithStrangerComponent implements OnInit, OnDestroy {
       connectState: 'waitting',
       offerIceCandidates: [],
       answerIceCandidates: []
-    }
+    };
+
+    this.handleFirebaseUpdateUserStatus("calling");
 
 
     if (newConnectionRef.key) this.currentConnection.key = newConnectionRef.key;
 
     set(newConnectionRef, this.currentConnection);
+  }
+
+  private handleFirebaseUpdateUserStatus(currentStatus: "waitting" | "calling"): void{
+    if(!this.userInfo) return;
+    const refToUpdate = ref(this.DB_INSTANCE, 'userAvailable/' + this.userInfo.key);
+    update(refToUpdate, {
+      ...this.userInfo,
+      currentStatus
+    });
   }
 
   private handleFirebaseDeleteConnection(): void {
@@ -202,7 +249,7 @@ export class TalkWithStrangerComponent implements OnInit, OnDestroy {
   private handleFirebaseUpdateStateConnection(connectState: "waitting" | "calling"): void {
     if (!this.currentConnection) return;
     const refToUpdate = ref(this.DB_INSTANCE, 'connections/' + this.currentConnection.key);
-
+    
     update(refToUpdate, {
       ...this.currentConnection,
       connectState
@@ -219,9 +266,13 @@ export class TalkWithStrangerComponent implements OnInit, OnDestroy {
 
 
   public handleEventCalling(answer: IUser): void {
+    if(answer.currentStatus == "calling") return;
     this.isWaitingPairing = true;
     this.handleFirebaseNewConnection(answer);
     this.audioService.playSound('offer');
+    this.waittingToCallingSubscription = timer(this.TIME_WATTING_ACCEPT).subscribe(()=>{
+      this.handleFirebaseDeleteConnection();
+    })
   }
 
   public handleEventAcceptCall(): void {

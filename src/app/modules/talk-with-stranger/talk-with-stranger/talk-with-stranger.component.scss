@@ -116,6 +116,17 @@
 
     }
 
+    &__disable{
+        background-color: black;
+        &>.call-user-online__user__avatar{
+            display: block !important;
+        }
+
+        &>.call-user-online__user__call{
+            display: none !important;
+        }
+    }
+
     
 
     &__user:hover {

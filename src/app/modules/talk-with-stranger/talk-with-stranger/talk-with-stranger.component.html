@@ -9,7 +9,7 @@
         <h2 *ngIf="_userOnlines.length > 0">Monster online</h2>
 
         <ul class="call-user-online" *ngIf="_userOnlines.length > 0;else data_empty_ref">
-            <li class="call-user-online__user" *ngFor="let user of _userOnlines">
+            <li class="call-user-online__user" *ngFor="let user of _userOnlines" [ngClass]="{'call-user-online__disable' : user.currentStatus == 'calling'}">
                 <img class="call-user-online__user__avatar"
                     src="{{user.avatar}}"
                     alt="">
