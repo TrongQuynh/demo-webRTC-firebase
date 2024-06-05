@@ -179,18 +179,23 @@ export class P2pGroupCallComponent implements OnInit, OnDestroy, AfterViewInit {
 
         remoteVideoElement.srcObject = remoteStream;
 
-        const remoteVideoResizeEvent = remoteVideoElement.addEventListener("resize", () => {
-          const { width, height } = remoteVideoElement.getClientRects()[0];
-          
-          if (height > width) remoteVideoElement.style.maxWidth = "30%";
-          const maxWidth = window.innerWidth / 3;
-          remoteVideoElement.style.maxWidth = `${maxWidth}px`;
-          // if(this.remote_video_container_element) {
-          //   if((this.remote_video_container_element.element.nativeElement as HTMLDivElement).querySelectorAll("video").length)
-          // }
-        })
+        if (this.remote_video_container_element) {
+          const remoteVideoContainerElement= (this.remote_video_container_element.element.nativeElement as HTMLDivElement);
+          remoteVideoContainerElement.append(remoteVideoElement);
+          let numberOfVideoTag = remoteVideoContainerElement.childElementCount;
 
-        this._eventDom.push({ name: "resize", func: remoteVideoResizeEvent });
+          const remoteVideoResizeEvent = remoteVideoElement.addEventListener("resize", () => {
+
+            const maxWidth = window.innerWidth / 3;
+            remoteVideoContainerElement.querySelectorAll("video").forEach(tag=>{
+              tag.style.maxWidth = `${maxWidth}px`;
+              tag.style.maxHeight = `${maxWidth}px`;
+            })
+          })
+  
+          this._eventDom.push({ name: "resize", func: remoteVideoResizeEvent });
+  
+        }
 
         this.localStream.getTracks().forEach(track => {
           //add localtracks so that they can be sent once the connection is established.
