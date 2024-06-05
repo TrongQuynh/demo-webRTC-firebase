@@ -181,9 +181,13 @@ export class P2pGroupCallComponent implements OnInit, OnDestroy, AfterViewInit {
 
         const remoteVideoResizeEvent = remoteVideoElement.addEventListener("resize", () => {
           const { width, height } = remoteVideoElement.getClientRects()[0];
-
+          
           if (height > width) remoteVideoElement.style.maxWidth = "30%";
-
+          const maxWidth = window.innerWidth / 3;
+          remoteVideoElement.style.maxWidth = `${maxWidth}px`;
+          // if(this.remote_video_container_element) {
+          //   if((this.remote_video_container_element.element.nativeElement as HTMLDivElement).querySelectorAll("video").length)
+          // }
         })
 
         this._eventDom.push({ name: "resize", func: remoteVideoResizeEvent });

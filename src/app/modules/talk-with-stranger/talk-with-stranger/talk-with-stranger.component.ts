@@ -183,7 +183,7 @@ export class TalkWithStrangerComponent implements OnInit, OnDestroy {
     onChildChanged(userRef, (data) => {
       const userInfo: IUser = (data.val() as IUser);
       this._userOnlines = this._userOnlines.map(user => {
-        if(user.id == userInfo.id) user.currentStatus = userInfo.currentStatus;
+        if(user.key == userInfo.key) user.currentStatus = userInfo.currentStatus;
         return user;
       })
     })
@@ -192,6 +192,10 @@ export class TalkWithStrangerComponent implements OnInit, OnDestroy {
       this.handleRemoveUserOutOfList(data.val().key);
       if (this.currentConnection && (this.currentConnection.answerKey == data.val().key || this.currentConnection.offerKey == data.val().key)) {
         this.handleFirebaseDeleteConnection();
+      }
+
+      if(this.userInfo && this.userInfo.key == data.val().key){
+        this.router.navigate(["/"]);
       }
     });
 
