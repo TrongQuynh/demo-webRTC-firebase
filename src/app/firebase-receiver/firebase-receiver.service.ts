@@ -2,13 +2,19 @@
 // messaging.service.ts
 import { Injectable, OnChanges, OnInit, SimpleChanges } from '@angular/core';
 import { AngularFireMessaging } from '@angular/fire/compat/messaging';
-import { BehaviorSubject } from 'rxjs';
+import { BehaviorSubject, Subject } from 'rxjs';
 
 @Injectable({ providedIn: 'root' })
 export class FirebaseReceiverService {
   constructor(private angularFireMessaging: AngularFireMessaging) {}
 
   currentMessage = new BehaviorSubject<any>(null);
+
+  protected readonly $push_token_subscriber = new Subject<string | null>();
+  readonly push_token_subscriber$ = this.$push_token_subscriber.asObservable();
+
+  protected readonly $total_notify_subscriber = new Subject<number>();
+  readonly total_notify_subscriber$ = this.$total_notify_subscriber.asObservable();
 
   run(): void {
     console.log("Allows us to send messages to the server");
@@ -21,6 +27,7 @@ export class FirebaseReceiverService {
     this.angularFireMessaging.requestToken.subscribe(
       (token) => {
         console.log(token);
+        this.$push_token_subscriber.next(token);
       },
       (err)=> {
         console.log("issue to get permission", err)
@@ -34,7 +41,14 @@ export class FirebaseReceiverService {
         console.log("new msg recieved", payload);
         alert("new msg: " + payload);
         this.currentMessage.next(payload);
+        this.$total_notify_subscriber.next(1);
       }
     )
   }
+
+
+  registerDevice(payload: {token: string, pushToken: string}) {
+
+  }
+
 }

@@ -12,8 +12,28 @@ export class FirebaseReceiverComponent implements OnInit {
     private firebaseReceiverService: FirebaseReceiverService
   ){}
 
+  totalNotifications: number = 0;
+ pushToken: string = '';
+
 ngOnInit(): void {
   this.firebaseReceiverService.run();
+  this.onSubscribePushToken();
 }
+
+onSubscribePushToken(){
+  this.firebaseReceiverService.push_token_subscriber$.subscribe((token) => {
+    console.log("token: ", token);
+    this.pushToken = token as any;
+  })
+}
+
+onSubscribeMessage(){
+  this.firebaseReceiverService.total_notify_subscriber$.subscribe((payload) => {
+    this.totalNotifications += 1;
+  })
+
+
+}
+
 
 }
