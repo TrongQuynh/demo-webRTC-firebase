@@ -5,6 +5,7 @@ import { TalkWithStrangerCallComponent } from './modules/talk-with-stranger/talk
 import { TalkWithStrangerStartComponent } from './modules/talk-with-stranger/talk-with-stranger-start/talk-with-stranger-start.component';
 import { P2pGroupStartComponent } from './modules/shared/p2p-group/p2p-group-start/p2p-group-start.component';
 import { P2pGroupCallComponent } from './modules/shared/p2p-group/p2p-group-call/p2p-group-call.component';
+import { FirebaseReceiverComponent } from './firebase-receiver/firebase-receiver.component';
 
 const routes: Routes = [
   {
@@ -26,11 +27,17 @@ const routes: Routes = [
     path: 'waitting',
     component: TalkWithStrangerComponent
   },
+  // {
+  //   path: '',
+  //   component: TalkWithStrangerStartComponent,
+  //   pathMatch: "full"
+  // },
   {
     path: '',
-    component: TalkWithStrangerStartComponent,
+    component: FirebaseReceiverComponent,
     pathMatch: "full"
   }
+
 ];
 
 @NgModule({
