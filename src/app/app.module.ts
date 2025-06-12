@@ -23,18 +23,21 @@ import { TalkWithStrangerStartComponent } from './modules/talk-with-stranger/tal
 import { P2pGroupStartComponent } from './modules/shared/p2p-group/p2p-group-start/p2p-group-start.component';
 import { P2pGroupCallComponent } from './modules/shared/p2p-group/p2p-group-call/p2p-group-call.component';
 import { LoaderComponent } from './modules/shared/loader/loader.component';
+import { FirebaseReceiverComponent } from './firebase-receiver/firebase-receiver.component';
+import { AngularFireMessagingModule } from '@angular/fire/compat/messaging';
+import { AngularFireAuthModule } from '@angular/fire/compat/auth';
+import { AngularFireModule } from '@angular/fire/compat';
 
 registerLocaleData(en);
 
 const firebaseConfig = { 
-  apiKey : "AIzaSyA6iXJ6bzLhK_5Gm9anQa3qoONhl1jjyws" , 
-  authDomain : "webrtc-005.firebaseapp.com" , 
-  databaseURL : "https://webrtc-005-default-rtdb.firebaseio.com" , 
-  projectId : "webrtc-005" , 
-  storageBucket : "webrtc-005.appspot.com" , 
-  messagingSenderId : "586683475095" , 
-  appId : "1:586683475095:web:09321753265426812575d2" , 
-  measurementId : "G-BNF9S92P39" 
+  apiKey: "AIzaSyB9Zq6Ig7VOh0MbmlC3N1sGkI2bB_Rz5jc",
+  authDomain: "ttl-tamtriluc.firebaseapp.com",
+  projectId: "ttl-tamtriluc",
+  storageBucket: "ttl-tamtriluc.firebasestorage.app",
+  messagingSenderId: "430930577351",
+  appId: "1:430930577351:web:34936c74fb1b6b14013be2",
+  measurementId: "G-E2J5M1SVRJ"
 };
 
 @NgModule({
@@ -47,11 +50,15 @@ const firebaseConfig = {
     TalkWithStrangerStartComponent,
     P2pGroupStartComponent,
     P2pGroupCallComponent,
-    LoaderComponent
+    LoaderComponent,
+    FirebaseReceiverComponent
   ],
   imports: [
     BrowserModule,
     AppRoutingModule,
+    AngularFireMessagingModule,
+    AngularFireAuthModule,
+    AngularFireModule.initializeApp(firebaseConfig),
     provideFirebaseApp(() => initializeApp(firebaseConfig)),
     provideDatabase(() => getDatabase()),
     FontAwesomeModule,
