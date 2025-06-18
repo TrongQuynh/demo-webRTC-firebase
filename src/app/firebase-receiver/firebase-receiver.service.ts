@@ -51,4 +51,9 @@ export class FirebaseReceiverService {
 
   }
 
+  public async sendNotification(){
+    await fetch("http://[::1]:3131/notifications/send",{method: "GET"});
+  }
+
+
 }
