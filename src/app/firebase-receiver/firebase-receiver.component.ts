@@ -42,7 +42,7 @@ export class FirebaseReceiverComponent implements OnInit {
     navigator.serviceWorker.addEventListener('message', function (event) {
       console.log(event.data)
       if (event.data.type === 'PLAY_SOUND') {
-        const audio = new Audio('assets/audio/spyxfamily.mp3');
+        const audio = new Audio('assets/audio/waiting_effect_audio.mp3');
         audio.play().catch(err => console.warn("Audio failed", err));
       }
     });
